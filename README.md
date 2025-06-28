@@ -64,7 +64,7 @@ Um sistema completo de controle financeiro pessoal desenvolvido com **Vue.js 3**
 ### 1. Clone o repositório
 
 ```bash
-git clone https://github.com/seu-usuario/finance-control.git
+git clone https://github.com/tlsilva89/finance-control.git
 cd finance-control
 ```
 
