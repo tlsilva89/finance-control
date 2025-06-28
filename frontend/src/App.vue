@@ -1,12 +1,14 @@
 <template>
   <div id="app" class="dark">
     <RouterView />
+    <NotificationContainer />
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted } from "vue";
 import { useAuthStore } from "./stores/auth";
+import NotificationContainer from "./components/UI/NotificationContainer.vue";
 
 const authStore = useAuthStore();
 

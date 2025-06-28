@@ -1,7 +1,14 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-dark-950">
-    <div class="max-w-md w-full space-y-8 p-8">
+  <div
+    class="min-h-screen flex items-center justify-center bg-dark-950 px-4 sm:px-6 lg:px-8"
+  >
+    <div class="max-w-md w-full space-y-8">
       <div class="text-center">
+        <div
+          class="mx-auto h-12 w-12 bg-primary-600 rounded-full flex items-center justify-center mb-4"
+        >
+          <BanknotesIcon class="h-6 w-6 text-white" />
+        </div>
         <h2 class="text-3xl font-bold text-gray-100">
           {{ isLogin ? "Entrar" : "Criar Conta" }}
         </h2>
@@ -11,42 +18,74 @@
       </div>
 
       <form @submit.prevent="handleSubmit" class="mt-8 space-y-6">
-        <div v-if="!isLogin" class="space-y-4">
-          <input
-            v-model="form.name"
-            type="text"
-            placeholder="Nome completo"
-            class="input-field w-full"
-            required
-          />
-        </div>
-
         <div class="space-y-4">
-          <input
-            v-model="form.email"
-            type="email"
-            placeholder="Email"
-            class="input-field w-full"
-            required
-          />
-          <input
-            v-model="form.password"
-            type="password"
-            placeholder="Senha"
-            class="input-field w-full"
-            required
-          />
+          <div v-if="!isLogin">
+            <label
+              for="name"
+              class="block text-sm font-medium text-gray-300 mb-1"
+            >
+              Nome completo
+            </label>
+            <input
+              id="name"
+              v-model="form.name"
+              type="text"
+              placeholder="Digite seu nome completo"
+              class="input-field w-full"
+              required
+            />
+          </div>
+
+          <div>
+            <label
+              for="email"
+              class="block text-sm font-medium text-gray-300 mb-1"
+            >
+              Email
+            </label>
+            <input
+              id="email"
+              v-model="form.email"
+              type="email"
+              placeholder="Digite seu email"
+              class="input-field w-full"
+              required
+            />
+          </div>
+
+          <div>
+            <label
+              for="password"
+              class="block text-sm font-medium text-gray-300 mb-1"
+            >
+              Senha
+            </label>
+            <input
+              id="password"
+              v-model="form.password"
+              type="password"
+              placeholder="Digite sua senha"
+              class="input-field w-full"
+              required
+            />
+          </div>
         </div>
 
-        <button type="submit" :disabled="loading" class="btn-primary w-full">
-          {{ loading ? "Processando..." : isLogin ? "Entrar" : "Criar Conta" }}
-        </button>
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          :loading="authStore.loading"
+          class="w-full"
+        >
+          {{ isLogin ? "Entrar" : "Criar Conta" }}
+        </Button>
 
         <div class="text-center">
           <button
             type="button"
             @click="isLogin = !isLogin"
-            class="text-primary-500 hover:text-primary-400"
+            class="text-primary-500 hover:text-primary-400 transition-colors"
           >
             {{ isLogin ? "Não tem conta? Criar uma" : "Já tem conta? Entrar" }}
           </button>
@@ -60,12 +99,13 @@
 import { ref, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth";
+import Button from "../components/UI/Button.vue";
+import { BanknotesIcon } from "@heroicons/vue/24/outline";
 
 const router = useRouter();
 const authStore = useAuthStore();
 
 const isLogin = ref(true);
-const loading = ref(false);
 
 const form = reactive({
   name: "",
@@ -74,7 +114,6 @@ const form = reactive({
 });
 
 const handleSubmit = async () => {
-  loading.value = true;
   try {
     if (isLogin.value) {
       await authStore.login(form.email, form.password);
@@ -83,9 +122,7 @@ const handleSubmit = async () => {
     }
     router.push("/dashboard");
   } catch (error) {
-    console.error("Erro na autenticação:", error);
-  } finally {
-    loading.value = false;
+    // Error handling is done in the store with toast notifications
   }
 };
 </script>
