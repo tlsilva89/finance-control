@@ -285,11 +285,11 @@ Este projeto está sob a licença **MIT**. Veja o arquivo [LICENSE](LICENSE) par
 
 ## 👨‍💻 Autor
 
-**Seu Nome**
+**Thiago Luciano**
 
 - GitHub: [@tlsilva89](https://github.com/tlsilva89)
 - LinkedIn: [Thiago Luciano](https://www.linkedin.com/in/tlsilva89/)
-- Email: seu.email@exemplo.com
+- Email: thiago.luciano@digitalspark.dev
 
 ## 🙏 Agradecimentos
 
