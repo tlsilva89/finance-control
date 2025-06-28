@@ -6,6 +6,7 @@ import authRoutes from "./routes/auth.js";
 import incomeRoutes from "./routes/income.js";
 import creditCardRoutes from "./routes/creditCards.js";
 import serviceRoutes from "./routes/services.js";
+import subscriptionRoutes from "./routes/subscriptions.js";
 
 dotenv.config();
 
@@ -45,7 +46,8 @@ app.use((req, res, next) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/incomes", incomeRoutes);
 app.use("/api/credit-cards", creditCardRoutes);
-app.use("/api/services", serviceRoutes); // Nova rota adicionada
+app.use("/api/services", serviceRoutes);
+app.use("/api/subscriptions", subscriptionRoutes); // Nova rota adicionada
 
 // Rota de teste
 app.get("/api/health", (req, res) => {
@@ -54,7 +56,13 @@ app.get("/api/health", (req, res) => {
     message: "Servidor funcionando!",
     timestamp: new Date().toISOString(),
     database: "Connected",
-    routes: ["/api/auth", "/api/incomes", "/api/credit-cards", "/api/services"],
+    routes: [
+      "/api/auth",
+      "/api/incomes",
+      "/api/credit-cards",
+      "/api/services",
+      "/api/subscriptions",
+    ],
   });
 });
 
@@ -102,6 +110,10 @@ async function startServer() {
     console.log(`   • POST /api/services`);
     console.log(`   • PUT  /api/services/:id`);
     console.log(`   • DELETE /api/services/:id`);
+    console.log(`   • GET  /api/subscriptions`);
+    console.log(`   • POST /api/subscriptions`);
+    console.log(`   • PUT  /api/subscriptions/:id`);
+    console.log(`   • DELETE /api/subscriptions/:id`);
   });
 }
 
