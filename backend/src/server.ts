@@ -5,6 +5,7 @@ import { PrismaClient } from "@prisma/client";
 import authRoutes from "./routes/auth.js";
 import incomeRoutes from "./routes/income.js";
 import creditCardRoutes from "./routes/creditCards.js";
+import serviceRoutes from "./routes/services.js";
 
 dotenv.config();
 
@@ -43,7 +44,8 @@ app.use((req, res, next) => {
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/incomes", incomeRoutes);
-app.use("/api/credit-cards", creditCardRoutes); // Nova rota adicionada
+app.use("/api/credit-cards", creditCardRoutes);
+app.use("/api/services", serviceRoutes); // Nova rota adicionada
 
 // Rota de teste
 app.get("/api/health", (req, res) => {
@@ -52,6 +54,7 @@ app.get("/api/health", (req, res) => {
     message: "Servidor funcionando!",
     timestamp: new Date().toISOString(),
     database: "Connected",
+    routes: ["/api/auth", "/api/incomes", "/api/credit-cards", "/api/services"],
   });
 });
 
@@ -84,6 +87,21 @@ async function startServer() {
     console.log(`🚀 Servidor rodando na porta ${PORT}`);
     console.log(`📍 Health check: http://localhost:${PORT}/api/health`);
     console.log(`🗄️  Database: ${process.env.DATABASE_URL}`);
+    console.log(`📋 Rotas disponíveis:`);
+    console.log(`   • POST /api/auth/login`);
+    console.log(`   • POST /api/auth/register`);
+    console.log(`   • GET  /api/incomes`);
+    console.log(`   • POST /api/incomes`);
+    console.log(`   • PUT  /api/incomes/:id`);
+    console.log(`   • DELETE /api/incomes/:id`);
+    console.log(`   • GET  /api/credit-cards`);
+    console.log(`   • POST /api/credit-cards`);
+    console.log(`   • PUT  /api/credit-cards/:id`);
+    console.log(`   • DELETE /api/credit-cards/:id`);
+    console.log(`   • GET  /api/services`);
+    console.log(`   • POST /api/services`);
+    console.log(`   • PUT  /api/services/:id`);
+    console.log(`   • DELETE /api/services/:id`);
   });
 }
 
