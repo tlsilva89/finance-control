@@ -1,21 +1,59 @@
 <template>
   <AppLayout>
     <div class="space-y-6">
-      <!-- Header -->
+      <!-- Header com Navegação de Mês -->
       <div
         class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
       >
         <div>
           <h1 class="text-3xl font-bold text-gray-100">Cartões de Crédito</h1>
-          <p class="text-gray-400 mt-1">Gerencie seus cartões e limites</p>
+          <p class="text-gray-400 mt-1">
+            Gerencie seus cartões e limites por mês
+          </p>
         </div>
+
+        <!-- Navegação de Mês + Botão Novo Cartão -->
         <div class="flex items-center space-x-4">
-          <div class="text-right">
-            <p class="text-sm text-gray-400">Total de Dívidas</p>
-            <p class="text-2xl font-bold text-red-400">
-              {{ formatCurrency(totalDebt) }}
-            </p>
+          <div
+            class="flex items-center space-x-2 bg-dark-900 border border-dark-700 rounded-lg p-2"
+          >
+            <button
+              @click="dateStore.previousMonth()"
+              class="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-dark-700"
+              :disabled="!dateStore.canGoPrevious"
+              :class="{
+                'opacity-50 cursor-not-allowed': !dateStore.canGoPrevious,
+              }"
+            >
+              <ChevronLeftIcon class="w-4 h-4" />
+            </button>
+
+            <div class="text-center min-w-[140px]">
+              <p class="text-sm font-medium text-gray-100">
+                {{ dateStore.currentMonthName }}
+              </p>
+              <p class="text-xs text-gray-400">Mês de referência</p>
+            </div>
+
+            <button
+              @click="dateStore.nextMonth()"
+              class="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-dark-700"
+              :disabled="!dateStore.canGoNext"
+              :class="{ 'opacity-50 cursor-not-allowed': !dateStore.canGoNext }"
+            >
+              <ChevronRightIcon class="w-4 h-4" />
+            </button>
           </div>
+
+          <button
+            v-if="!dateStore.isCurrentMonth"
+            @click="dateStore.goToCurrentMonth()"
+            class="px-3 py-2 text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+          >
+            Mês Atual
+          </button>
+
+          <!-- Botão Novo Cartão no Header (Desktop) -->
           <Button
             variant="primary"
             size="md"
@@ -28,6 +66,25 @@
         </div>
       </div>
 
+      <!-- Indicador de Mês Atual -->
+      <div
+        class="bg-primary-900/20 border border-primary-500/30 rounded-lg p-4"
+      >
+        <div class="flex items-center space-x-3">
+          <InformationCircleIcon class="w-5 h-5 text-primary-400" />
+          <div>
+            <p class="text-sm font-medium text-primary-100">
+              Visualizando dados de: {{ dateStore.currentMonthName }}
+            </p>
+            <p class="text-xs text-primary-300">
+              {{ dateStore.isCurrentMonth ? "Mês atual" : "Mês anterior" }} •
+              {{ financeStore.currentMonthCreditCards.length }} cartão(ões)
+              registrado(s)
+            </p>
+          </div>
+        </div>
+      </div>
+
       <!-- Stats Cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div
@@ -35,12 +92,26 @@
         >
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-gray-400 text-sm">Limite Total</p>
-              <p class="text-2xl font-bold text-blue-400">
-                {{ formatCurrency(totalLimit) }}
+              <p class="text-gray-400 text-sm">Total de Dívidas</p>
+              <p class="text-2xl font-bold text-red-400">
+                {{ formatCurrency(financeStore.totalCreditCardDebt) }}
               </p>
             </div>
-            <CreditCardIcon class="w-8 h-8 text-blue-400" />
+            <CreditCardIcon class="w-8 h-8 text-red-400" />
+          </div>
+        </div>
+
+        <div
+          class="bg-dark-900 border border-dark-800 rounded-xl p-4 sm:p-6 shadow-lg transition-all duration-200 hover:shadow-xl"
+        >
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-400 text-sm">Limite Total</p>
+              <p class="text-2xl font-bold text-blue-400">
+                {{ formatCurrency(financeStore.totalCreditCardLimit) }}
+              </p>
+            </div>
+            <BanknotesIcon class="w-8 h-8 text-blue-400" />
           </div>
         </div>
 
@@ -50,25 +121,11 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-400 text-sm">Limite Disponível</p>
-              <p class="text-lg font-semibold text-green-400">
-                {{ formatCurrency(availableLimit) }}
+              <p class="text-2xl font-bold text-green-400">
+                {{ formatCurrency(financeStore.availableCreditLimit) }}
               </p>
             </div>
-            <BanknotesIcon class="w-8 h-8 text-green-400" />
-          </div>
-        </div>
-
-        <div
-          class="bg-dark-900 border border-dark-800 rounded-xl p-4 sm:p-6 shadow-lg transition-all duration-200 hover:shadow-xl"
-        >
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-gray-400 text-sm">Total de Cartões</p>
-              <p class="text-2xl font-bold text-gray-100">
-                {{ creditCards.length }}
-              </p>
-            </div>
-            <DocumentTextIcon class="w-8 h-8 text-purple-400" />
+            <DocumentTextIcon class="w-8 h-8 text-green-400" />
           </div>
         </div>
       </div>
@@ -79,7 +136,7 @@
       >
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-xl font-semibold text-gray-100">
-            Meus Cartões de Crédito
+            Meus Cartões - {{ dateStore.currentMonthName }}
           </h2>
           <div class="flex items-center space-x-2">
             <input
@@ -107,7 +164,8 @@
             Nenhum cartão encontrado
           </h3>
           <p class="text-gray-400 mb-6">
-            Comece adicionando seu primeiro cartão de crédito
+            Comece adicionando seu primeiro cartão para
+            {{ dateStore.currentMonthName }}
           </p>
           <Button variant="primary" :icon="PlusIcon" @click="openModal()">
             Adicionar Primeiro Cartão
@@ -128,9 +186,7 @@
                 <CreditCardIcon class="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 class="font-medium text-gray-100">
-                  {{ card.name }}
-                </h3>
+                <h3 class="font-medium text-gray-100">{{ card.name }}</h3>
                 <p class="text-sm text-gray-400">
                   Vencimento: {{ card.dueDate }}
                 </p>
@@ -220,8 +276,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { useFinanceStore } from "../stores/finance";
+import { useDateReferenceStore } from "../stores/dateReference";
 import AppLayout from "../components/Layout/AppLayout.vue";
 import Button from "../components/UI/Button.vue";
 import CreditCardModal from "../components/UI/CreditCardModal.vue";
@@ -235,6 +292,9 @@ import {
   MagnifyingGlassIcon,
   PencilIcon,
   TrashIcon,
+  InformationCircleIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from "@heroicons/vue/24/outline";
 
 // Interface para CreditCard
@@ -244,10 +304,13 @@ interface CreditCard {
   limit: number;
   currentDebt: number;
   dueDate: number;
+  monthReference: string;
   createdAt: string;
 }
 
+// Inicializar stores
 const financeStore = useFinanceStore();
+const dateStore = useDateReferenceStore();
 
 // Estados reativos
 const loading = ref(false);
@@ -256,21 +319,13 @@ const deleteModalOpen = ref(false);
 const selectedCreditCard = ref<CreditCard | null>(null);
 const creditCardToDelete = ref<CreditCard | null>(null);
 const searchTerm = ref("");
+const mounted = ref(false);
 
 // Computed properties
-const creditCards = computed(() => financeStore.creditCards || []);
-const totalDebt = computed(() => financeStore.totalCreditCardDebt || 0);
-
-const totalLimit = computed(() =>
-  creditCards.value.reduce((sum, card) => sum + card.limit, 0)
-);
-
-const availableLimit = computed(() => totalLimit.value - totalDebt.value);
-
 const filteredCreditCards = computed(() => {
-  if (!searchTerm.value) return creditCards.value;
+  if (!searchTerm.value) return financeStore.currentMonthCreditCards;
 
-  return creditCards.value.filter((card) =>
+  return financeStore.currentMonthCreditCards.filter((card) =>
     card.name.toLowerCase().includes(searchTerm.value.toLowerCase())
   );
 });
@@ -353,8 +408,12 @@ const handleDelete = async () => {
 
 // Lifecycle
 onMounted(async () => {
+  if (mounted.value) return;
+  mounted.value = true;
+
   loading.value = true;
   try {
+    await nextTick();
     await financeStore.fetchCreditCards();
   } catch (err) {
     console.error("Erro ao carregar cartões:", err);
@@ -362,4 +421,25 @@ onMounted(async () => {
     loading.value = false;
   }
 });
+
+// Watch para mudanças de mês
+let watchTimeout: NodeJS.Timeout;
+watch(
+  () => dateStore.monthYearString,
+  async (newValue, oldValue) => {
+    if (newValue === oldValue || !mounted.value) return;
+
+    clearTimeout(watchTimeout);
+    watchTimeout = setTimeout(async () => {
+      loading.value = true;
+      try {
+        await financeStore.fetchCreditCards();
+      } catch (err) {
+        console.error("Erro ao carregar cartões:", err);
+      } finally {
+        loading.value = false;
+      }
+    }, 100);
+  }
+);
 </script>

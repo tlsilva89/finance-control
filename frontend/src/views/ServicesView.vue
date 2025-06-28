@@ -1,21 +1,59 @@
 <template>
   <AppLayout>
     <div class="space-y-6">
-      <!-- Header -->
+      <!-- Header com Navegação de Mês -->
       <div
         class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
       >
         <div>
           <h1 class="text-3xl font-bold text-gray-100">Serviços</h1>
-          <p class="text-gray-400 mt-1">Gerencie seus serviços de consumo</p>
+          <p class="text-gray-400 mt-1">
+            Gerencie seus serviços de consumo por mês
+          </p>
         </div>
+
+        <!-- Navegação de Mês + Botão Novo Serviço -->
         <div class="flex items-center space-x-4">
-          <div class="text-right">
-            <p class="text-sm text-gray-400">Total Mensal</p>
-            <p class="text-2xl font-bold text-orange-400">
-              {{ formatCurrency(totalServices) }}
-            </p>
+          <div
+            class="flex items-center space-x-2 bg-dark-900 border border-dark-700 rounded-lg p-2"
+          >
+            <button
+              @click="dateStore.previousMonth()"
+              class="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-dark-700"
+              :disabled="!dateStore.canGoPrevious"
+              :class="{
+                'opacity-50 cursor-not-allowed': !dateStore.canGoPrevious,
+              }"
+            >
+              <ChevronLeftIcon class="w-4 h-4" />
+            </button>
+
+            <div class="text-center min-w-[140px]">
+              <p class="text-sm font-medium text-gray-100">
+                {{ dateStore.currentMonthName }}
+              </p>
+              <p class="text-xs text-gray-400">Mês de referência</p>
+            </div>
+
+            <button
+              @click="dateStore.nextMonth()"
+              class="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-dark-700"
+              :disabled="!dateStore.canGoNext"
+              :class="{ 'opacity-50 cursor-not-allowed': !dateStore.canGoNext }"
+            >
+              <ChevronRightIcon class="w-4 h-4" />
+            </button>
           </div>
+
+          <button
+            v-if="!dateStore.isCurrentMonth"
+            @click="dateStore.goToCurrentMonth()"
+            class="px-3 py-2 text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+          >
+            Mês Atual
+          </button>
+
+          <!-- Botão Novo Serviço no Header (Desktop) -->
           <Button
             variant="primary"
             size="md"
@@ -28,8 +66,41 @@
         </div>
       </div>
 
+      <!-- Indicador de Mês Atual -->
+      <div
+        class="bg-primary-900/20 border border-primary-500/30 rounded-lg p-4"
+      >
+        <div class="flex items-center space-x-3">
+          <InformationCircleIcon class="w-5 h-5 text-primary-400" />
+          <div>
+            <p class="text-sm font-medium text-primary-100">
+              Visualizando dados de: {{ dateStore.currentMonthName }}
+            </p>
+            <p class="text-xs text-primary-300">
+              {{ dateStore.isCurrentMonth ? "Mês atual" : "Mês anterior" }} •
+              {{ financeStore.currentMonthServices.length }} serviço(s)
+              registrado(s)
+            </p>
+          </div>
+        </div>
+      </div>
+
       <!-- Stats Cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div
+          class="bg-dark-900 border border-dark-800 rounded-xl p-4 sm:p-6 shadow-lg transition-all duration-200 hover:shadow-xl"
+        >
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-400 text-sm">Total Mensal</p>
+              <p class="text-2xl font-bold text-orange-400">
+                {{ formatCurrency(financeStore.totalServices) }}
+              </p>
+            </div>
+            <ChartBarIcon class="w-8 h-8 text-orange-400" />
+          </div>
+        </div>
+
         <div
           class="bg-dark-900 border border-dark-800 rounded-xl p-4 sm:p-6 shadow-lg transition-all duration-200 hover:shadow-xl"
         >
@@ -49,92 +120,12 @@
         >
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-gray-400 text-sm">Próximo Vencimento</p>
-              <p class="text-lg font-semibold text-yellow-400">
-                {{ nextDueDate }}
-              </p>
-            </div>
-            <CalendarIcon class="w-8 h-8 text-yellow-400" />
-          </div>
-        </div>
-
-        <div
-          class="bg-dark-900 border border-dark-800 rounded-xl p-4 sm:p-6 shadow-lg transition-all duration-200 hover:shadow-xl"
-        >
-          <div class="flex items-center justify-between">
-            <div>
               <p class="text-gray-400 text-sm">Total de Serviços</p>
               <p class="text-2xl font-bold text-gray-100">
-                {{ services.length }}
+                {{ financeStore.currentMonthServices.length }}
               </p>
             </div>
             <DocumentTextIcon class="w-8 h-8 text-purple-400" />
-          </div>
-        </div>
-      </div>
-
-      <!-- Categorias de Serviços -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div
-          class="bg-dark-900 border border-dark-800 rounded-xl p-4 sm:p-6 shadow-lg"
-        >
-          <h3 class="text-lg font-semibold text-gray-100 mb-4">
-            Por Categoria
-          </h3>
-          <div class="space-y-3">
-            <div
-              v-for="category in servicesByCategory"
-              :key="category.name"
-              class="flex items-center justify-between p-3 bg-dark-800 rounded-lg"
-            >
-              <div class="flex items-center space-x-3">
-                <div
-                  class="w-3 h-3 rounded-full"
-                  :style="{ backgroundColor: category.color }"
-                ></div>
-                <span class="text-gray-100">{{ category.name }}</span>
-              </div>
-              <div class="text-right">
-                <p class="font-semibold text-gray-100">
-                  {{ formatCurrency(category.total) }}
-                </p>
-                <p class="text-xs text-gray-400">
-                  {{ category.count }} serviços
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="bg-dark-900 border border-dark-800 rounded-xl p-4 sm:p-6 shadow-lg"
-        >
-          <h3 class="text-lg font-semibold text-gray-100 mb-4">
-            Próximos Vencimentos
-          </h3>
-          <div class="space-y-3">
-            <div
-              v-for="service in upcomingServices"
-              :key="service.id"
-              class="flex items-center justify-between p-3 bg-dark-800 rounded-lg"
-            >
-              <div class="flex items-center space-x-3">
-                <component
-                  :is="getCategoryIcon(service.category)"
-                  class="w-5 h-5 text-gray-400"
-                />
-                <div>
-                  <p class="font-medium text-gray-100">{{ service.name }}</p>
-                  <p class="text-xs text-gray-400">{{ service.category }}</p>
-                </div>
-              </div>
-              <div class="text-right">
-                <p class="font-semibold text-orange-400">
-                  {{ formatCurrency(service.amount) }}
-                </p>
-                <p class="text-xs text-gray-400">Dia {{ service.dueDate }}</p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -144,7 +135,9 @@
         class="bg-dark-900 border border-dark-800 rounded-xl p-4 sm:p-6 shadow-lg transition-all duration-200 hover:shadow-xl"
       >
         <div class="flex items-center justify-between mb-6">
-          <h2 class="text-xl font-semibold text-gray-100">Meus Serviços</h2>
+          <h2 class="text-xl font-semibold text-gray-100">
+            Meus Serviços - {{ dateStore.currentMonthName }}
+          </h2>
           <div class="flex items-center space-x-2">
             <select
               v-model="selectedCategory"
@@ -184,7 +177,8 @@
             Nenhum serviço encontrado
           </h3>
           <p class="text-gray-400 mb-6">
-            Comece adicionando seus serviços de consumo
+            Comece adicionando seus serviços para
+            {{ dateStore.currentMonthName }}
           </p>
           <Button variant="primary" :icon="PlusIcon" @click="openModal()">
             Adicionar Primeiro Serviço
@@ -208,9 +202,7 @@
                 />
               </div>
               <div>
-                <h3 class="font-medium text-gray-100">
-                  {{ service.name }}
-                </h3>
+                <h3 class="font-medium text-gray-100">{{ service.name }}</h3>
                 <p class="text-sm text-gray-400">
                   {{ service.category }} • Vence dia {{ service.dueDate }}
                 </p>
@@ -274,8 +266,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { useFinanceStore } from "../stores/finance";
+import { useDateReferenceStore } from "../stores/dateReference";
 import AppLayout from "../components/Layout/AppLayout.vue";
 import Button from "../components/UI/Button.vue";
 import ServiceModal from "../components/UI/ServiceModal.vue";
@@ -285,11 +278,13 @@ import {
   PlusIcon,
   ChartBarIcon,
   HomeIcon,
-  CalendarIcon,
   DocumentTextIcon,
   MagnifyingGlassIcon,
   PencilIcon,
   TrashIcon,
+  InformationCircleIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   BoltIcon,
   GlobeAltIcon,
   PhoneIcon,
@@ -304,10 +299,13 @@ interface Service {
   amount: number;
   dueDate: number;
   category: string;
+  monthReference: string;
   createdAt: string;
 }
 
+// Inicializar stores
 const financeStore = useFinanceStore();
+const dateStore = useDateReferenceStore();
 
 // Estados reativos
 const loading = ref(false);
@@ -317,69 +315,19 @@ const selectedService = ref<Service | null>(null);
 const serviceToDelete = ref<Service | null>(null);
 const searchTerm = ref("");
 const selectedCategory = ref("");
+const mounted = ref(false);
 
 // Computed properties
-const services = computed(() => financeStore.services || []);
-const totalServices = computed(() => financeStore.totalServices || 0);
-
 const basicServicesTotal = computed(() =>
-  services.value
+  financeStore.currentMonthServices
     .filter((service) =>
       ["Moradia", "Energia", "Água", "Internet"].includes(service.category)
     )
     .reduce((sum, service) => sum + service.amount, 0)
 );
 
-const nextDueDate = computed(() => {
-  if (services.value.length === 0) return "Nenhum";
-
-  const today = new Date().getDate();
-  const upcoming = services.value
-    .filter((service) => service.dueDate >= today)
-    .sort((a, b) => a.dueDate - b.dueDate);
-
-  return upcoming.length > 0 ? `Dia ${upcoming[0].dueDate}` : "Próximo mês";
-});
-
-const upcomingServices = computed(() => {
-  const today = new Date().getDate();
-  return services.value
-    .filter(
-      (service) => service.dueDate >= today && service.dueDate <= today + 7
-    )
-    .sort((a, b) => a.dueDate - b.dueDate)
-    .slice(0, 5);
-});
-
-const servicesByCategory = computed(() => {
-  const categories = services.value.reduce((acc, service) => {
-    if (!acc[service.category]) {
-      acc[service.category] = { total: 0, count: 0 };
-    }
-    acc[service.category].total += service.amount;
-    acc[service.category].count += 1;
-    return acc;
-  }, {} as Record<string, { total: number; count: number }>);
-
-  const colors = [
-    "#3b82f6",
-    "#ef4444",
-    "#f59e0b",
-    "#10b981",
-    "#8b5cf6",
-    "#f97316",
-  ];
-
-  return Object.entries(categories).map(([name, data], index) => ({
-    name,
-    total: data.total,
-    count: data.count,
-    color: colors[index % colors.length],
-  }));
-});
-
 const filteredServices = computed(() => {
-  let filtered = services.value;
+  let filtered = financeStore.currentMonthServices;
 
   if (selectedCategory.value) {
     filtered = filtered.filter(
@@ -484,8 +432,12 @@ const handleDelete = async () => {
 
 // Lifecycle
 onMounted(async () => {
+  if (mounted.value) return;
+  mounted.value = true;
+
   loading.value = true;
   try {
+    await nextTick();
     await financeStore.fetchServices();
   } catch (err) {
     console.error("Erro ao carregar serviços:", err);
@@ -493,4 +445,25 @@ onMounted(async () => {
     loading.value = false;
   }
 });
+
+// Watch para mudanças de mês
+let watchTimeout: NodeJS.Timeout;
+watch(
+  () => dateStore.monthYearString,
+  async (newValue, oldValue) => {
+    if (newValue === oldValue || !mounted.value) return;
+
+    clearTimeout(watchTimeout);
+    watchTimeout = setTimeout(async () => {
+      loading.value = true;
+      try {
+        await financeStore.fetchServices();
+      } catch (err) {
+        console.error("Erro ao carregar serviços:", err);
+      } finally {
+        loading.value = false;
+      }
+    }, 100);
+  }
+);
 </script>

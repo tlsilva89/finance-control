@@ -1,21 +1,59 @@
 <template>
   <AppLayout>
     <div class="space-y-6">
-      <!-- Header -->
+      <!-- Header com Navegação de Mês -->
       <div
         class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
       >
         <div>
           <h1 class="text-3xl font-bold text-gray-100">Assinaturas</h1>
-          <p class="text-gray-400 mt-1">Gerencie suas assinaturas mensais</p>
+          <p class="text-gray-400 mt-1">
+            Gerencie suas assinaturas mensais por mês
+          </p>
         </div>
+
+        <!-- Navegação de Mês + Botão Nova Assinatura -->
         <div class="flex items-center space-x-4">
-          <div class="text-right">
-            <p class="text-sm text-gray-400">Total Mensal</p>
-            <p class="text-2xl font-bold text-purple-400">
-              {{ formatCurrency(totalSubscriptions) }}
-            </p>
+          <div
+            class="flex items-center space-x-2 bg-dark-900 border border-dark-700 rounded-lg p-2"
+          >
+            <button
+              @click="dateStore.previousMonth()"
+              class="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-dark-700"
+              :disabled="!dateStore.canGoPrevious"
+              :class="{
+                'opacity-50 cursor-not-allowed': !dateStore.canGoPrevious,
+              }"
+            >
+              <ChevronLeftIcon class="w-4 h-4" />
+            </button>
+
+            <div class="text-center min-w-[140px]">
+              <p class="text-sm font-medium text-gray-100">
+                {{ dateStore.currentMonthName }}
+              </p>
+              <p class="text-xs text-gray-400">Mês de referência</p>
+            </div>
+
+            <button
+              @click="dateStore.nextMonth()"
+              class="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-dark-700"
+              :disabled="!dateStore.canGoNext"
+              :class="{ 'opacity-50 cursor-not-allowed': !dateStore.canGoNext }"
+            >
+              <ChevronRightIcon class="w-4 h-4" />
+            </button>
           </div>
+
+          <button
+            v-if="!dateStore.isCurrentMonth"
+            @click="dateStore.goToCurrentMonth()"
+            class="px-3 py-2 text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+          >
+            Mês Atual
+          </button>
+
+          <!-- Botão Nova Assinatura no Header (Desktop) -->
           <Button
             variant="primary"
             size="md"
@@ -28,8 +66,41 @@
         </div>
       </div>
 
+      <!-- Indicador de Mês Atual -->
+      <div
+        class="bg-primary-900/20 border border-primary-500/30 rounded-lg p-4"
+      >
+        <div class="flex items-center space-x-3">
+          <InformationCircleIcon class="w-5 h-5 text-primary-400" />
+          <div>
+            <p class="text-sm font-medium text-primary-100">
+              Visualizando dados de: {{ dateStore.currentMonthName }}
+            </p>
+            <p class="text-xs text-primary-300">
+              {{ dateStore.isCurrentMonth ? "Mês atual" : "Mês anterior" }} •
+              {{ financeStore.currentMonthSubscriptions.length }} assinatura(s)
+              registrada(s)
+            </p>
+          </div>
+        </div>
+      </div>
+
       <!-- Stats Cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div
+          class="bg-dark-900 border border-dark-800 rounded-xl p-4 sm:p-6 shadow-lg transition-all duration-200 hover:shadow-xl"
+        >
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-400 text-sm">Total Mensal</p>
+              <p class="text-2xl font-bold text-purple-400">
+                {{ formatCurrency(financeStore.totalSubscriptions) }}
+              </p>
+            </div>
+            <Cog6ToothIcon class="w-8 h-8 text-purple-400" />
+          </div>
+        </div>
+
         <div
           class="bg-dark-900 border border-dark-800 rounded-xl p-4 sm:p-6 shadow-lg transition-all duration-200 hover:shadow-xl"
         >
@@ -49,98 +120,12 @@
         >
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-gray-400 text-sm">Próxima Renovação</p>
-              <p class="text-lg font-semibold text-yellow-400">
-                {{ nextRenewalDate }}
-              </p>
-            </div>
-            <CalendarIcon class="w-8 h-8 text-yellow-400" />
-          </div>
-        </div>
-
-        <div
-          class="bg-dark-900 border border-dark-800 rounded-xl p-4 sm:p-6 shadow-lg transition-all duration-200 hover:shadow-xl"
-        >
-          <div class="flex items-center justify-between">
-            <div>
               <p class="text-gray-400 text-sm">Total de Assinaturas</p>
               <p class="text-2xl font-bold text-gray-100">
-                {{ subscriptions.length }}
+                {{ financeStore.currentMonthSubscriptions.length }}
               </p>
             </div>
             <DocumentTextIcon class="w-8 h-8 text-purple-400" />
-          </div>
-        </div>
-      </div>
-
-      <!-- Categorias de Assinaturas -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div
-          class="bg-dark-900 border border-dark-800 rounded-xl p-4 sm:p-6 shadow-lg"
-        >
-          <h3 class="text-lg font-semibold text-gray-100 mb-4">
-            Por Categoria
-          </h3>
-          <div class="space-y-3">
-            <div
-              v-for="category in subscriptionsByCategory"
-              :key="category.name"
-              class="flex items-center justify-between p-3 bg-dark-800 rounded-lg"
-            >
-              <div class="flex items-center space-x-3">
-                <div
-                  class="w-3 h-3 rounded-full"
-                  :style="{ backgroundColor: category.color }"
-                ></div>
-                <span class="text-gray-100">{{ category.name }}</span>
-              </div>
-              <div class="text-right">
-                <p class="font-semibold text-gray-100">
-                  {{ formatCurrency(category.total) }}
-                </p>
-                <p class="text-xs text-gray-400">
-                  {{ category.count }} assinaturas
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="bg-dark-900 border border-dark-800 rounded-xl p-4 sm:p-6 shadow-lg"
-        >
-          <h3 class="text-lg font-semibold text-gray-100 mb-4">
-            Próximas Renovações
-          </h3>
-          <div class="space-y-3">
-            <div
-              v-for="subscription in upcomingRenewals"
-              :key="subscription.id"
-              class="flex items-center justify-between p-3 bg-dark-800 rounded-lg"
-            >
-              <div class="flex items-center space-x-3">
-                <component
-                  :is="getCategoryIcon(subscription.category)"
-                  class="w-5 h-5 text-gray-400"
-                />
-                <div>
-                  <p class="font-medium text-gray-100">
-                    {{ subscription.name }}
-                  </p>
-                  <p class="text-xs text-gray-400">
-                    {{ subscription.category }}
-                  </p>
-                </div>
-              </div>
-              <div class="text-right">
-                <p class="font-semibold text-purple-400">
-                  {{ formatCurrency(subscription.amount) }}
-                </p>
-                <p class="text-xs text-gray-400">
-                  {{ formatDate(subscription.renewalDate) }}
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -151,7 +136,7 @@
       >
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-xl font-semibold text-gray-100">
-            Minhas Assinaturas
+            Minhas Assinaturas - {{ dateStore.currentMonthName }}
           </h2>
           <div class="flex items-center space-x-2">
             <select
@@ -191,7 +176,8 @@
             Nenhuma assinatura encontrada
           </h3>
           <p class="text-gray-400 mb-6">
-            Comece adicionando suas assinaturas mensais
+            Comece adicionando suas assinaturas para
+            {{ dateStore.currentMonthName }}
           </p>
           <Button variant="primary" :icon="PlusIcon" @click="openModal()">
             Adicionar Primeira Assinatura
@@ -222,15 +208,6 @@
                   {{ subscription.category }} • Renova em
                   {{ formatDate(subscription.renewalDate) }}
                 </p>
-                <div class="flex items-center space-x-2 mt-1">
-                  <div
-                    class="w-2 h-2 rounded-full"
-                    :class="getRenewalStatus(subscription.renewalDate)"
-                  ></div>
-                  <span class="text-xs text-gray-400">
-                    {{ getRenewalText(subscription.renewalDate) }}
-                  </span>
-                </div>
               </div>
             </div>
 
@@ -291,8 +268,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { useFinanceStore } from "../stores/finance";
+import { useDateReferenceStore } from "../stores/dateReference";
 import AppLayout from "../components/Layout/AppLayout.vue";
 import Button from "../components/UI/Button.vue";
 import SubscriptionModal from "../components/UI/SubscriptionModal.vue";
@@ -302,11 +280,13 @@ import {
   PlusIcon,
   Cog6ToothIcon,
   PlayIcon,
-  CalendarIcon,
   DocumentTextIcon,
   MagnifyingGlassIcon,
   PencilIcon,
   TrashIcon,
+  InformationCircleIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   MusicalNoteIcon,
   ComputerDesktopIcon,
   PuzzlePieceIcon,
@@ -320,10 +300,13 @@ interface Subscription {
   amount: number;
   renewalDate: string;
   category: string;
+  monthReference: string;
   createdAt: string;
 }
 
+// Inicializar stores
 const financeStore = useFinanceStore();
+const dateStore = useDateReferenceStore();
 
 // Estados reativos
 const loading = ref(false);
@@ -333,73 +316,17 @@ const selectedSubscription = ref<Subscription | null>(null);
 const subscriptionToDelete = ref<Subscription | null>(null);
 const searchTerm = ref("");
 const selectedCategory = ref("");
+const mounted = ref(false);
 
 // Computed properties
-const subscriptions = computed(() => financeStore.subscriptions || []);
-const totalSubscriptions = computed(() => financeStore.totalSubscriptions || 0);
-
 const streamingTotal = computed(() =>
-  subscriptions.value
+  financeStore.currentMonthSubscriptions
     .filter((sub) => sub.category === "Streaming")
     .reduce((sum, sub) => sum + sub.amount, 0)
 );
 
-const nextRenewalDate = computed(() => {
-  if (subscriptions.value.length === 0) return "Nenhuma";
-
-  const upcoming = subscriptions.value
-    .map((sub) => ({ ...sub, date: new Date(sub.renewalDate) }))
-    .sort((a, b) => a.date.getTime() - b.date.getTime())
-    .find((sub) => sub.date >= new Date());
-
-  return upcoming ? formatDate(upcoming.renewalDate) : "Próximo mês";
-});
-
-const upcomingRenewals = computed(() => {
-  const today = new Date();
-  const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-  return subscriptions.value
-    .filter((sub) => {
-      const renewalDate = new Date(sub.renewalDate);
-      return renewalDate >= today && renewalDate <= nextWeek;
-    })
-    .sort(
-      (a, b) =>
-        new Date(a.renewalDate).getTime() - new Date(b.renewalDate).getTime()
-    )
-    .slice(0, 5);
-});
-
-const subscriptionsByCategory = computed(() => {
-  const categories = subscriptions.value.reduce((acc, subscription) => {
-    if (!acc[subscription.category]) {
-      acc[subscription.category] = { total: 0, count: 0 };
-    }
-    acc[subscription.category].total += subscription.amount;
-    acc[subscription.category].count += 1;
-    return acc;
-  }, {} as Record<string, { total: number; count: number }>);
-
-  const colors = [
-    "#8b5cf6",
-    "#ef4444",
-    "#f59e0b",
-    "#10b981",
-    "#3b82f6",
-    "#f97316",
-  ];
-
-  return Object.entries(categories).map(([name, data], index) => ({
-    name,
-    total: data.total,
-    count: data.count,
-    color: colors[index % colors.length],
-  }));
-});
-
 const filteredSubscriptions = computed(() => {
-  let filtered = subscriptions.value;
+  let filtered = financeStore.currentMonthSubscriptions;
 
   if (selectedCategory.value) {
     filtered = filtered.filter(
@@ -458,31 +385,6 @@ const getCategoryColor = (category: string) => {
   return colors[category as keyof typeof colors] || "bg-gray-600";
 };
 
-const getRenewalStatus = (renewalDate: string) => {
-  const today = new Date();
-  const renewal = new Date(renewalDate);
-  const diffDays = Math.ceil(
-    (renewal.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  if (diffDays <= 3) return "bg-red-500";
-  if (diffDays <= 7) return "bg-yellow-500";
-  return "bg-green-500";
-};
-
-const getRenewalText = (renewalDate: string) => {
-  const today = new Date();
-  const renewal = new Date(renewalDate);
-  const diffDays = Math.ceil(
-    (renewal.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  if (diffDays <= 0) return "Vencida";
-  if (diffDays === 1) return "Vence amanhã";
-  if (diffDays <= 7) return `Vence em ${diffDays} dias`;
-  return "Em dia";
-};
-
 // Funções de controle do modal
 const openModal = (subscription: Subscription | null = null) => {
   selectedSubscription.value = subscription;
@@ -538,8 +440,12 @@ const handleDelete = async () => {
 
 // Lifecycle
 onMounted(async () => {
+  if (mounted.value) return;
+  mounted.value = true;
+
   loading.value = true;
   try {
+    await nextTick();
     await financeStore.fetchSubscriptions();
   } catch (err) {
     console.error("Erro ao carregar assinaturas:", err);
@@ -547,4 +453,25 @@ onMounted(async () => {
     loading.value = false;
   }
 });
+
+// Watch para mudanças de mês
+let watchTimeout: NodeJS.Timeout;
+watch(
+  () => dateStore.monthYearString,
+  async (newValue, oldValue) => {
+    if (newValue === oldValue || !mounted.value) return;
+
+    clearTimeout(watchTimeout);
+    watchTimeout = setTimeout(async () => {
+      loading.value = true;
+      try {
+        await financeStore.fetchSubscriptions();
+      } catch (err) {
+        console.error("Erro ao carregar assinaturas:", err);
+      } finally {
+        loading.value = false;
+      }
+    }, 100);
+  }
+);
 </script>
