@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  incomes       Income[]
+  creditCards   CreditCard[]
+  subscriptions Subscription[]
+  services      Service[]
+  transactions  Transaction[]
+
+  @@map("users")
+}
+
+model Income {
+  id          String   @id @default(cuid())
+  description String
+  amount      Float
+  date        DateTime
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@map("incomes")
+}
+
+model CreditCard {
+  id           String        @id @default(cuid())
+  name         String
+  limit        Float
+  currentDebt  Float
+  dueDate      Int
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+
+  @@map("credit_cards")
+}
+
+model Subscription {
+  id          String   @id @default(cuid())
+  name        String
+  amount      Float
+  renewalDate DateTime
+  category    String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@map("subscriptions")
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  name        String
+  amount      Float
+  dueDate     Int
+  category    String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@map("services")
+}
+
+model Transaction {
+  id           String      @id @default(cuid())
+  description  String
+  amount       Float
+  type         String // 'income' | 'expense'
+  category     String
+  date         DateTime
+  userId       String
+  user         User        @relation(fields: [userId], references: [id])
+  creditCardId String?
+  creditCard   CreditCard? @relation(fields: [creditCardId], references: [id])
+  createdAt    DateTime    @default(now())
+
+  @@map("transactions")
+}
