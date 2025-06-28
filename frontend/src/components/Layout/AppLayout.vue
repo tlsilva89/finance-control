@@ -305,6 +305,17 @@
         </div>
       </footer>
     </main>
+
+    <!-- Modais -->
+    <ChangePasswordModal
+      :is-open="changePasswordModalOpen"
+      @close="changePasswordModalOpen = false"
+    />
+
+    <SecurityQuestionModal
+      :is-open="securityQuestionModalOpen"
+      @close="securityQuestionModalOpen = false"
+    />
   </div>
 </template>
 
@@ -313,6 +324,8 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../../stores/auth";
 import { useFinanceStore } from "../../stores/finance";
+import ChangePasswordModal from "../Modals/ChangePasswordModal.vue";
+import SecurityQuestionModal from "../Modals/SecurityQuestionModal.vue";
 import {
   HomeIcon,
   CreditCardIcon,
@@ -336,6 +349,8 @@ const financeStore = useFinanceStore();
 
 const sidebarOpen = ref(false);
 const userMenuOpen = ref(false);
+const changePasswordModalOpen = ref(false);
+const securityQuestionModalOpen = ref(false);
 
 const user = computed(() => authStore.user);
 
@@ -406,14 +421,12 @@ const logout = () => {
 
 const openChangePassword = () => {
   userMenuOpen.value = false;
-  // Implementar modal ou página de alteração de senha
-  console.log("Abrir alteração de senha");
+  changePasswordModalOpen.value = true;
 };
 
 const openSecuritySettings = () => {
   userMenuOpen.value = false;
-  // Implementar modal ou página de configurações de segurança
-  console.log("Abrir configurações de segurança");
+  securityQuestionModalOpen.value = true;
 };
 
 // Close dropdowns when clicking outside

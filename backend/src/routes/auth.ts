@@ -35,6 +35,11 @@ interface ChangePasswordRequest {
   newPassword: string;
 }
 
+interface UpdateSecurityQuestionRequest {
+  securityQuestion: string;
+  securityAnswer: string;
+}
+
 // Middleware de autenticação
 const authenticateToken = (req: any, res: Response, next: any) => {
   const authHeader = req.headers["authorization"];
@@ -272,14 +277,14 @@ router.post(
   }
 );
 
-// Alterar senha (usuário logado)
+// Alterar senha (usuário logado) - CORRIGIDO PARA USAR A INTERFACE
 router.post(
   "/change-password",
   authenticateToken,
-  async (req: any, res: Response) => {
+  async (req: Request<{}, {}, ChangePasswordRequest>, res: Response) => {
     try {
       const { currentPassword, newPassword } = req.body;
-      const userId = req.userId;
+      const userId = (req as any).userId;
 
       const user = await prisma.user.findUnique({
         where: { id: userId },
@@ -334,14 +339,17 @@ router.post("/check-username", async (req: Request, res: Response) => {
   }
 });
 
-// Atualizar pergunta de segurança (usuário logado)
+// Atualizar pergunta de segurança (usuário logado) - CORRIGIDO PARA USAR A INTERFACE
 router.post(
   "/update-security-question",
   authenticateToken,
-  async (req: any, res: Response) => {
+  async (
+    req: Request<{}, {}, UpdateSecurityQuestionRequest>,
+    res: Response
+  ) => {
     try {
       const { securityQuestion, securityAnswer } = req.body;
-      const userId = req.userId;
+      const userId = (req as any).userId;
 
       const hashedSecurityAnswer = await bcrypt.hash(
         securityAnswer.toLowerCase().trim(),
