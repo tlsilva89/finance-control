@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import axios from "axios";
+import api from "../services/api";
 import { useNotification } from "../composables/useNotification";
 
 interface User {
@@ -29,7 +29,8 @@ export const useAuthStore = defineStore("auth", {
       this.loading = true;
 
       try {
-        const response = await axios.post("/api/auth/login", {
+        console.log("Fazendo login...");
+        const response = await api.post("/api/auth/login", {
           email,
           password,
         });
@@ -40,10 +41,11 @@ export const useAuthStore = defineStore("auth", {
         this.isAuthenticated = true;
 
         localStorage.setItem("token", token);
-        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
         success(`Bem-vindo, ${user.name}!`);
+        console.log("Login realizado com sucesso:", user);
       } catch (err: any) {
+        console.error("Erro no login:", err);
         const message = err.response?.data?.error || "Erro ao fazer login";
         error(message);
         throw err;
@@ -57,7 +59,8 @@ export const useAuthStore = defineStore("auth", {
       this.loading = true;
 
       try {
-        const response = await axios.post("/api/auth/register", {
+        console.log("Registrando usuário...");
+        const response = await api.post("/api/auth/register", {
           name,
           email,
           password,
@@ -69,10 +72,11 @@ export const useAuthStore = defineStore("auth", {
         this.isAuthenticated = true;
 
         localStorage.setItem("token", token);
-        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
         success(`Conta criada com sucesso! Bem-vindo, ${user.name}!`);
+        console.log("Registro realizado com sucesso:", user);
       } catch (err: any) {
+        console.error("Erro no registro:", err);
         const message = err.response?.data?.error || "Erro ao criar conta";
         error(message);
         throw err;
@@ -89,7 +93,6 @@ export const useAuthStore = defineStore("auth", {
       this.isAuthenticated = false;
 
       localStorage.removeItem("token");
-      delete axios.defaults.headers.common["Authorization"];
 
       info("Você foi desconectado");
     },

@@ -12,7 +12,7 @@ const ServicesView = () => import("../views/ServicesView.vue");
 const routes = [
   {
     path: "/",
-    redirect: "/dashboard",
+    redirect: "/login",
   },
   {
     path: "/login",

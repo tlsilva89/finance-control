@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
-import axios from "axios";
-import { useToast } from "vue-toastification";
+import api from "../services/api";
+import { useNotification } from "../composables/useNotification";
 
 interface Income {
   id: string;
@@ -10,165 +10,84 @@ interface Income {
   createdAt: string;
 }
 
-interface CreditCard {
-  id: string;
-  name: string;
-  limit: number;
-  currentDebt: number;
-  dueDate: number;
-  createdAt: string;
-}
-
-interface Subscription {
-  id: string;
-  name: string;
-  amount: number;
-  renewalDate: string;
-  category: string;
-  createdAt: string;
-}
-
-interface Service {
-  id: string;
-  name: string;
-  amount: number;
-  dueDate: number;
-  category: string;
-  createdAt: string;
-}
-
 interface FinanceState {
   incomes: Income[];
-  creditCards: CreditCard[];
-  subscriptions: Subscription[];
-  services: Service[];
   loading: boolean;
 }
 
 export const useFinanceStore = defineStore("finance", {
   state: (): FinanceState => ({
     incomes: [],
-    creditCards: [],
-    subscriptions: [],
-    services: [],
     loading: false,
   }),
 
   getters: {
     totalIncome: (state) =>
       state.incomes.reduce((sum, income) => sum + income.amount, 0),
-    totalCreditCardDebt: (state) =>
-      state.creditCards.reduce((sum, card) => sum + card.currentDebt, 0),
-    totalSubscriptions: (state) =>
-      state.subscriptions.reduce((sum, sub) => sum + sub.amount, 0),
-    totalServices: (state) =>
-      state.services.reduce((sum, service) => sum + service.amount, 0),
-
-    monthlyExpenses: (state) => {
-      const subscriptions = state.subscriptions.reduce(
-        (sum, sub) => sum + sub.amount,
-        0
-      );
-      const services = state.services.reduce(
-        (sum, service) => sum + service.amount,
-        0
-      );
-      return subscriptions + services;
-    },
-
-    balance(): number {
-      return this.totalIncome - this.monthlyExpenses - this.totalCreditCardDebt;
-    },
   },
 
   actions: {
-    async fetchAllData() {
+    async fetchIncomes() {
       this.loading = true;
       try {
-        await Promise.all([
-          this.fetchIncomes(),
-          this.fetchCreditCards(),
-          this.fetchSubscriptions(),
-          this.fetchServices(),
-        ]);
+        console.log("Buscando entradas...");
+        const response = await api.get("/api/incomes");
+        this.incomes = response.data;
+        console.log("Entradas carregadas:", this.incomes);
+      } catch (error) {
+        console.error("Erro ao buscar entradas:", error);
+        const { error: showError } = useNotification();
+        showError("Erro ao carregar entradas");
       } finally {
         this.loading = false;
       }
     },
 
-    async fetchIncomes() {
-      try {
-        const response = await axios.get("/api/incomes");
-        this.incomes = response.data;
-      } catch (error) {
-        console.error("Erro ao buscar entradas:", error);
-      }
-    },
-
     async addIncome(income: Omit<Income, "id" | "createdAt">) {
-      const toast = useToast();
+      const { success, error } = useNotification();
       try {
-        const response = await axios.post("/api/incomes", income);
-        this.incomes.push(response.data);
-        toast.success("Entrada adicionada com sucesso!");
-      } catch (error: any) {
-        toast.error("Erro ao adicionar entrada");
-        throw error;
+        console.log("Adicionando entrada:", income);
+        const response = await api.post("/api/incomes", income);
+        this.incomes.unshift(response.data);
+        success("Entrada adicionada com sucesso!");
+        console.log("Entrada adicionada:", response.data);
+      } catch (err: any) {
+        console.error("Erro ao adicionar entrada:", err);
+        error("Erro ao adicionar entrada");
+        throw err;
       }
     },
 
     async updateIncome(id: string, income: Partial<Income>) {
-      const toast = useToast();
+      const { success, error } = useNotification();
       try {
-        const response = await axios.put(`/api/incomes/${id}`, income);
+        console.log("Atualizando entrada:", id, income);
+        const response = await api.put(`/api/incomes/${id}`, income);
         const index = this.incomes.findIndex((i) => i.id === id);
         if (index !== -1) {
           this.incomes[index] = response.data;
         }
-        toast.success("Entrada atualizada com sucesso!");
-      } catch (error: any) {
-        toast.error("Erro ao atualizar entrada");
-        throw error;
+        success("Entrada atualizada com sucesso!");
+        console.log("Entrada atualizada:", response.data);
+      } catch (err: any) {
+        console.error("Erro ao atualizar entrada:", err);
+        error("Erro ao atualizar entrada");
+        throw err;
       }
     },
 
     async deleteIncome(id: string) {
-      const toast = useToast();
+      const { success, error } = useNotification();
       try {
-        await axios.delete(`/api/incomes/${id}`);
+        console.log("Deletando entrada:", id);
+        await api.delete(`/api/incomes/${id}`);
         this.incomes = this.incomes.filter((i) => i.id !== id);
-        toast.success("Entrada removida com sucesso!");
-      } catch (error: any) {
-        toast.error("Erro ao remover entrada");
-        throw error;
-      }
-    },
-
-    // Métodos similares para creditCards, subscriptions e services...
-    async fetchCreditCards() {
-      try {
-        const response = await axios.get("/api/credit-cards");
-        this.creditCards = response.data;
-      } catch (error) {
-        console.error("Erro ao buscar cartões:", error);
-      }
-    },
-
-    async fetchSubscriptions() {
-      try {
-        const response = await axios.get("/api/subscriptions");
-        this.subscriptions = response.data;
-      } catch (error) {
-        console.error("Erro ao buscar assinaturas:", error);
-      }
-    },
-
-    async fetchServices() {
-      try {
-        const response = await axios.get("/api/services");
-        this.services = response.data;
-      } catch (error) {
-        console.error("Erro ao buscar serviços:", error);
+        success("Entrada removida com sucesso!");
+        console.log("Entrada removida:", id);
+      } catch (err: any) {
+        console.error("Erro ao remover entrada:", err);
+        error("Erro ao remover entrada");
+        throw err;
       }
     },
   },

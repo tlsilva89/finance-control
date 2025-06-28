@@ -46,9 +46,11 @@
           </div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-medium text-gray-100 truncate">
-              {{ user?.name }}
+              {{ user?.name || "Usuário" }}
             </p>
-            <p class="text-xs text-gray-400 truncate">{{ user?.email }}</p>
+            <p class="text-xs text-gray-400 truncate">
+              {{ user?.email || "email@exemplo.com" }}
+            </p>
           </div>
         </div>
       </div>
@@ -79,17 +81,15 @@
           </div>
           <div class="flex items-center space-x-4">
             <div class="hidden sm:block text-right">
-              <p class="text-sm font-medium text-gray-100">{{ user?.name }}</p>
-              <p class="text-xs text-gray-400">{{ formatCurrency(balance) }}</p>
+              <p class="text-sm font-medium text-gray-100">
+                {{ user?.name || "Usuário" }}
+              </p>
+              <p class="text-xs text-gray-400">Saldo: R$ 0,00</p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              @click="logout"
-              :icon="ArrowRightOnRectangleIcon"
-            >
+            <button @click="logout" class="btn-primary">
+              <ArrowRightOnRectangleIcon class="w-4 h-4 mr-2" />
               <span class="hidden sm:inline">Sair</span>
-            </Button>
+            </button>
           </div>
         </div>
       </header>
@@ -103,11 +103,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../../stores/auth";
-import { useFinanceStore } from "../../stores/finance";
-import Button from "../UI/Button.vue";
 import {
   HomeIcon,
   CreditCardIcon,
@@ -122,12 +120,10 @@ import {
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
-const financeStore = useFinanceStore();
 
 const sidebarOpen = ref(false);
 
 const user = computed(() => authStore.user);
-const balance = computed(() => financeStore.balance);
 
 const userInitials = computed(() => {
   if (!user.value?.name) return "U";
@@ -152,19 +148,8 @@ const pageTitle = computed(() => {
   return currentItem?.name || "Dashboard";
 });
 
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value);
-};
-
 const logout = () => {
   authStore.logout();
   router.push("/login");
 };
-
-onMounted(() => {
-  financeStore.fetchAllData();
-});
 </script>
