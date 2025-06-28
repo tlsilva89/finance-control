@@ -1,12 +1,14 @@
 import { defineStore } from "pinia";
 import api from "../services/api";
 import { useNotification } from "../composables/useNotification";
+import { useDateReferenceStore } from "./dateReference";
 
 interface Income {
   id: string;
   description: string;
   amount: number;
   date: string;
+  monthReference: string; // Novo campo
   createdAt: string;
 }
 
@@ -16,6 +18,7 @@ interface CreditCard {
   limit: number;
   currentDebt: number;
   dueDate: number;
+  monthReference: string; // Novo campo
   createdAt: string;
 }
 
@@ -25,6 +28,7 @@ interface Subscription {
   amount: number;
   renewalDate: string;
   category: string;
+  monthReference: string; // Novo campo
   createdAt: string;
 }
 
@@ -34,6 +38,7 @@ interface Service {
   amount: number;
   dueDate: number;
   category: string;
+  monthReference: string; // Novo campo
   createdAt: string;
 }
 
@@ -55,31 +60,72 @@ export const useFinanceStore = defineStore("finance", {
   }),
 
   getters: {
-    totalIncome: (state) =>
-      state.incomes.reduce((sum, income) => sum + income.amount, 0),
+    // Filtrar por mês de referência atual
+    currentMonthIncomes(): Income[] {
+      const dateStore = useDateReferenceStore();
+      return this.incomes.filter(
+        (income) => income.monthReference === dateStore.monthYearString
+      );
+    },
 
-    totalCreditCardDebt: (state) =>
-      state.creditCards.reduce((sum, card) => sum + card.currentDebt, 0),
+    currentMonthCreditCards(): CreditCard[] {
+      const dateStore = useDateReferenceStore();
+      return this.creditCards.filter(
+        (card) => card.monthReference === dateStore.monthYearString
+      );
+    },
 
-    totalCreditCardLimit: (state) =>
-      state.creditCards.reduce((sum, card) => sum + card.limit, 0),
+    currentMonthSubscriptions(): Subscription[] {
+      const dateStore = useDateReferenceStore();
+      return this.subscriptions.filter(
+        (sub) => sub.monthReference === dateStore.monthYearString
+      );
+    },
 
-    totalSubscriptions: (state) =>
-      state.subscriptions.reduce((sum, sub) => sum + sub.amount, 0),
+    currentMonthServices(): Service[] {
+      const dateStore = useDateReferenceStore();
+      return this.services.filter(
+        (service) => service.monthReference === dateStore.monthYearString
+      );
+    },
 
-    totalServices: (state) =>
-      state.services.reduce((sum, service) => sum + service.amount, 0),
+    totalIncome(): number {
+      return this.currentMonthIncomes.reduce(
+        (sum, income) => sum + income.amount,
+        0
+      );
+    },
 
-    monthlyExpenses: (state) => {
-      const subscriptions = state.subscriptions.reduce(
+    totalCreditCardDebt(): number {
+      return this.currentMonthCreditCards.reduce(
+        (sum, card) => sum + card.currentDebt,
+        0
+      );
+    },
+
+    totalCreditCardLimit(): number {
+      return this.currentMonthCreditCards.reduce(
+        (sum, card) => sum + card.limit,
+        0
+      );
+    },
+
+    totalSubscriptions(): number {
+      return this.currentMonthSubscriptions.reduce(
         (sum, sub) => sum + sub.amount,
         0
       );
-      const services = state.services.reduce(
+    },
+
+    totalServices(): number {
+      return this.currentMonthServices.reduce(
         (sum, service) => sum + service.amount,
         0
       );
-      return subscriptions + services;
+    },
+
+    monthlyExpenses(): number {
+      return this.totalSubscriptions + this.totalServices;
     },
 
     balance(): number {
@@ -94,13 +140,14 @@ export const useFinanceStore = defineStore("finance", {
   actions: {
     // ========== MÉTODOS GERAIS ==========
     async fetchAllData() {
+      const dateStore = useDateReferenceStore();
       this.loading = true;
       try {
         await Promise.all([
-          this.fetchIncomes(),
-          this.fetchCreditCards(),
-          this.fetchSubscriptions(),
-          this.fetchServices(),
+          this.fetchIncomes(dateStore.monthYearString),
+          this.fetchCreditCards(dateStore.monthYearString),
+          this.fetchSubscriptions(dateStore.monthYearString),
+          this.fetchServices(dateStore.monthYearString),
         ]);
       } finally {
         this.loading = false;
@@ -108,13 +155,22 @@ export const useFinanceStore = defineStore("finance", {
     },
 
     // ========== MÉTODOS DE INCOME ==========
-    async fetchIncomes() {
+    async fetchIncomes(monthReference?: string) {
+      const dateStore = useDateReferenceStore();
+      const month = monthReference || dateStore.monthYearString;
+
       this.loading = true;
       try {
-        console.log("Buscando entradas...");
-        const response = await api.get("/api/incomes");
-        this.incomes = response.data;
-        console.log("Entradas carregadas:", this.incomes);
+        console.log("Buscando entradas para o mês:", month);
+        const response = await api.get(`/api/incomes?monthReference=${month}`);
+
+        // Atualizar apenas as entradas do mês específico
+        this.incomes = this.incomes.filter(
+          (income) => income.monthReference !== month
+        );
+        this.incomes.push(...response.data);
+
+        console.log("Entradas carregadas:", response.data);
       } catch (error) {
         console.error("Erro ao buscar entradas:", error);
         const { error: showError } = useNotification();
@@ -124,11 +180,20 @@ export const useFinanceStore = defineStore("finance", {
       }
     },
 
-    async addIncome(income: Omit<Income, "id" | "createdAt">) {
+    async addIncome(
+      income: Omit<Income, "id" | "createdAt" | "monthReference">
+    ) {
       const { success, error } = useNotification();
+      const dateStore = useDateReferenceStore();
+
       try {
         console.log("Adicionando entrada:", income);
-        const response = await api.post("/api/incomes", income);
+        const incomeWithMonth = {
+          ...income,
+          monthReference: dateStore.monthYearString,
+        };
+
+        const response = await api.post("/api/incomes", incomeWithMonth);
         this.incomes.unshift(response.data);
         success("Entrada adicionada com sucesso!");
         console.log("Entrada adicionada:", response.data);
@@ -173,13 +238,23 @@ export const useFinanceStore = defineStore("finance", {
     },
 
     // ========== MÉTODOS DE CREDIT CARDS ==========
-    async fetchCreditCards() {
+    async fetchCreditCards(monthReference?: string) {
+      const dateStore = useDateReferenceStore();
+      const month = monthReference || dateStore.monthYearString;
+
       this.loading = true;
       try {
-        console.log("Buscando cartões...");
-        const response = await api.get("/api/credit-cards");
-        this.creditCards = response.data;
-        console.log("Cartões carregados:", this.creditCards);
+        console.log("Buscando cartões para o mês:", month);
+        const response = await api.get(
+          `/api/credit-cards?monthReference=${month}`
+        );
+
+        this.creditCards = this.creditCards.filter(
+          (card) => card.monthReference !== month
+        );
+        this.creditCards.push(...response.data);
+
+        console.log("Cartões carregados:", response.data);
       } catch (error) {
         console.error("Erro ao buscar cartões:", error);
         const { error: showError } = useNotification();
@@ -189,11 +264,20 @@ export const useFinanceStore = defineStore("finance", {
       }
     },
 
-    async addCreditCard(creditCard: Omit<CreditCard, "id" | "createdAt">) {
+    async addCreditCard(
+      creditCard: Omit<CreditCard, "id" | "createdAt" | "monthReference">
+    ) {
       const { success, error } = useNotification();
+      const dateStore = useDateReferenceStore();
+
       try {
         console.log("Adicionando cartão:", creditCard);
-        const response = await api.post("/api/credit-cards", creditCard);
+        const cardWithMonth = {
+          ...creditCard,
+          monthReference: dateStore.monthYearString,
+        };
+
+        const response = await api.post("/api/credit-cards", cardWithMonth);
         this.creditCards.unshift(response.data);
         success("Cartão adicionado com sucesso!");
         console.log("Cartão adicionado:", response.data);
@@ -238,13 +322,23 @@ export const useFinanceStore = defineStore("finance", {
     },
 
     // ========== MÉTODOS DE SUBSCRIPTIONS ==========
-    async fetchSubscriptions() {
+    async fetchSubscriptions(monthReference?: string) {
+      const dateStore = useDateReferenceStore();
+      const month = monthReference || dateStore.monthYearString;
+
       this.loading = true;
       try {
-        console.log("Buscando assinaturas...");
-        const response = await api.get("/api/subscriptions");
-        this.subscriptions = response.data;
-        console.log("Assinaturas carregadas:", this.subscriptions);
+        console.log("Buscando assinaturas para o mês:", month);
+        const response = await api.get(
+          `/api/subscriptions?monthReference=${month}`
+        );
+
+        this.subscriptions = this.subscriptions.filter(
+          (sub) => sub.monthReference !== month
+        );
+        this.subscriptions.push(...response.data);
+
+        console.log("Assinaturas carregadas:", response.data);
       } catch (error) {
         console.error("Erro ao buscar assinaturas:", error);
         const { error: showError } = useNotification();
@@ -255,12 +349,19 @@ export const useFinanceStore = defineStore("finance", {
     },
 
     async addSubscription(
-      subscription: Omit<Subscription, "id" | "createdAt">
+      subscription: Omit<Subscription, "id" | "createdAt" | "monthReference">
     ) {
       const { success, error } = useNotification();
+      const dateStore = useDateReferenceStore();
+
       try {
         console.log("Adicionando assinatura:", subscription);
-        const response = await api.post("/api/subscriptions", subscription);
+        const subWithMonth = {
+          ...subscription,
+          monthReference: dateStore.monthYearString,
+        };
+
+        const response = await api.post("/api/subscriptions", subWithMonth);
         this.subscriptions.unshift(response.data);
         success("Assinatura adicionada com sucesso!");
         console.log("Assinatura adicionada:", response.data);
@@ -308,13 +409,21 @@ export const useFinanceStore = defineStore("finance", {
     },
 
     // ========== MÉTODOS DE SERVICES ==========
-    async fetchServices() {
+    async fetchServices(monthReference?: string) {
+      const dateStore = useDateReferenceStore();
+      const month = monthReference || dateStore.monthYearString;
+
       this.loading = true;
       try {
-        console.log("Buscando serviços...");
-        const response = await api.get("/api/services");
-        this.services = response.data;
-        console.log("Serviços carregados:", this.services);
+        console.log("Buscando serviços para o mês:", month);
+        const response = await api.get(`/api/services?monthReference=${month}`);
+
+        this.services = this.services.filter(
+          (service) => service.monthReference !== month
+        );
+        this.services.push(...response.data);
+
+        console.log("Serviços carregados:", response.data);
       } catch (error) {
         console.error("Erro ao buscar serviços:", error);
         const { error: showError } = useNotification();
@@ -324,11 +433,20 @@ export const useFinanceStore = defineStore("finance", {
       }
     },
 
-    async addService(service: Omit<Service, "id" | "createdAt">) {
+    async addService(
+      service: Omit<Service, "id" | "createdAt" | "monthReference">
+    ) {
       const { success, error } = useNotification();
+      const dateStore = useDateReferenceStore();
+
       try {
         console.log("Adicionando serviço:", service);
-        const response = await api.post("/api/services", service);
+        const serviceWithMonth = {
+          ...service,
+          monthReference: dateStore.monthYearString,
+        };
+
+        const response = await api.post("/api/services", serviceWithMonth);
         this.services.unshift(response.data);
         success("Serviço adicionado com sucesso!");
         console.log("Serviço adicionado:", response.data);

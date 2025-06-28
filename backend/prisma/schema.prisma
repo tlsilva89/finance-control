@@ -8,70 +8,72 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  password      String
   incomes       Income[]
   creditCards   CreditCard[]
   subscriptions Subscription[]
   services      Service[]
   transactions  Transaction[]
+  createdAt     DateTime       @default(now())
 
   @@map("users")
 }
 
 model Income {
-  id          String   @id @default(cuid())
-  description String
-  amount      Float
-  date        DateTime
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  createdAt   DateTime @default(now())
+  id              String   @id @default(cuid())
+  description     String
+  amount          Float
+  date            DateTime
+  monthReference  String   @default("2025-06")
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  createdAt       DateTime @default(now())
 
   @@map("incomes")
 }
 
 model CreditCard {
-  id           String        @id @default(cuid())
-  name         String
-  limit        Float
-  currentDebt  Float
-  dueDate      Int
-  userId       String
-  user         User          @relation(fields: [userId], references: [id])
-  transactions Transaction[]
-  createdAt    DateTime      @default(now())
+  id              String        @id @default(cuid())
+  name            String
+  limit           Float
+  currentDebt     Float
+  dueDate         Int
+  monthReference  String        @default("2025-06")
+  userId          String
+  user            User          @relation(fields: [userId], references: [id])
+  transactions    Transaction[]
+  createdAt       DateTime      @default(now())
 
   @@map("credit_cards")
 }
 
 model Subscription {
-  id          String   @id @default(cuid())
-  name        String
-  amount      Float
-  renewalDate DateTime
-  category    String
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  createdAt   DateTime @default(now())
+  id              String   @id @default(cuid())
+  name            String
+  amount          Float
+  renewalDate     DateTime
+  category        String
+  monthReference  String   @default("2025-06")
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  createdAt       DateTime @default(now())
 
   @@map("subscriptions")
 }
 
 model Service {
-  id          String   @id @default(cuid())
-  name        String
-  amount      Float
-  dueDate     Int
-  category    String
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  createdAt   DateTime @default(now())
+  id              String   @id @default(cuid())
+  name            String
+  amount          Float
+  dueDate         Int
+  category        String
+  monthReference  String   @default("2025-06")
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  createdAt       DateTime @default(now())
 
   @@map("services")
 }
@@ -80,8 +82,8 @@ model Transaction {
   id           String      @id @default(cuid())
   description  String
   amount       Float
-  type         String // 'income' | 'expense'
-  category     String
+  type         String
+  category     String?
   date         DateTime
   userId       String
   user         User        @relation(fields: [userId], references: [id])

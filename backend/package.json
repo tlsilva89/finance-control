@@ -9,11 +9,11 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push && prisma generate",
+    "db:migrate": "prisma migrate dev && prisma generate",
     "db:studio": "prisma studio",
     "db:seed": "tsx src/seed.ts",
-    "db:reset": "prisma migrate reset",
+    "db:reset": "prisma migrate reset --force && prisma generate",
     "postinstall": "prisma generate",
     "lint": "eslint src/**/*.ts --fix",
     "lint:check": "eslint src/**/*.ts",
@@ -78,30 +78,5 @@
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
-  },
-  "lint-staged": {
-    "*.{ts,js}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,md}": [
-      "prettier --write"
-    ]
-  },
-  "jest": {
-    "preset": "ts-jest",
-    "testEnvironment": "node",
-    "roots": [
-      "<rootDir>/src"
-    ],
-    "testMatch": [
-      "**/__tests__/**/*.ts",
-      "**/?(*.)+(spec|test).ts"
-    ],
-    "collectCoverageFrom": [
-      "src/**/*.ts",
-      "!src/**/*.d.ts",
-      "!src/types/**/*"
-    ]
   }
 }

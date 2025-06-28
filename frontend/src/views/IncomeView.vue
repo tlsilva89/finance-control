@@ -1,21 +1,59 @@
 <template>
   <AppLayout>
     <div class="space-y-6">
-      <!-- Header -->
+      <!-- Header com Navegação de Mês -->
       <div
         class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
       >
         <div>
           <h1 class="text-3xl font-bold text-gray-100">Entradas</h1>
-          <p class="text-gray-400 mt-1">Gerencie suas fontes de renda</p>
+          <p class="text-gray-400 mt-1">
+            Gerencie suas fontes de renda por mês
+          </p>
         </div>
+
+        <!-- Navegação de Mês + Botão Nova Entrada -->
         <div class="flex items-center space-x-4">
-          <div class="text-right">
-            <p class="text-sm text-gray-400">Total de Entradas</p>
-            <p class="text-2xl font-bold text-green-400">
-              {{ formatCurrency(totalIncome) }}
-            </p>
+          <div
+            class="flex items-center space-x-2 bg-dark-900 border border-dark-700 rounded-lg p-2"
+          >
+            <button
+              @click="dateStore.previousMonth()"
+              class="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-dark-700"
+              :disabled="!dateStore.canGoPrevious"
+              :class="{
+                'opacity-50 cursor-not-allowed': !dateStore.canGoPrevious,
+              }"
+            >
+              <ChevronLeftIcon class="w-4 h-4" />
+            </button>
+
+            <div class="text-center min-w-[140px]">
+              <p class="text-sm font-medium text-gray-100">
+                {{ dateStore.currentMonthName }}
+              </p>
+              <p class="text-xs text-gray-400">Mês de referência</p>
+            </div>
+
+            <button
+              @click="dateStore.nextMonth()"
+              class="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-dark-700"
+              :disabled="!dateStore.canGoNext"
+              :class="{ 'opacity-50 cursor-not-allowed': !dateStore.canGoNext }"
+            >
+              <ChevronRightIcon class="w-4 h-4" />
+            </button>
           </div>
+
+          <button
+            v-if="!dateStore.isCurrentMonth"
+            @click="dateStore.goToCurrentMonth()"
+            class="px-3 py-2 text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+          >
+            Mês Atual
+          </button>
+
+          <!-- Botão Nova Entrada no Header (Desktop) -->
           <Button
             variant="primary"
             size="md"
@@ -28,6 +66,25 @@
         </div>
       </div>
 
+      <!-- Indicador de Mês Atual -->
+      <div
+        class="bg-primary-900/20 border border-primary-500/30 rounded-lg p-4"
+      >
+        <div class="flex items-center space-x-3">
+          <InformationCircleIcon class="w-5 h-5 text-primary-400" />
+          <div>
+            <p class="text-sm font-medium text-primary-100">
+              Visualizando dados de: {{ dateStore.currentMonthName }}
+            </p>
+            <p class="text-xs text-primary-300">
+              {{ dateStore.isCurrentMonth ? "Mês atual" : "Mês anterior" }} •
+              {{ financeStore.currentMonthIncomes.length }} entrada(s)
+              registrada(s)
+            </p>
+          </div>
+        </div>
+      </div>
+
       <!-- Stats Cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div
@@ -35,9 +92,9 @@
         >
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-gray-400 text-sm">Este Mês</p>
+              <p class="text-gray-400 text-sm">Total do Mês</p>
               <p class="text-2xl font-bold text-green-400">
-                {{ formatCurrency(monthlyIncome) }}
+                {{ formatCurrency(financeStore.totalIncome) }}
               </p>
             </div>
             <ArrowTrendingUpIcon class="w-8 h-8 text-green-400" />
@@ -65,7 +122,7 @@
             <div>
               <p class="text-gray-400 text-sm">Total de Registros</p>
               <p class="text-2xl font-bold text-gray-100">
-                {{ incomes.length }}
+                {{ financeStore.currentMonthIncomes.length }}
               </p>
             </div>
             <DocumentTextIcon class="w-8 h-8 text-purple-400" />
@@ -79,7 +136,7 @@
       >
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-xl font-semibold text-gray-100">
-            Histórico de Entradas
+            Histórico de Entradas - {{ dateStore.currentMonthName }}
           </h2>
           <div class="flex items-center space-x-2">
             <input
@@ -104,7 +161,8 @@
             Nenhuma entrada encontrada
           </h3>
           <p class="text-gray-400 mb-6">
-            Comece adicionando sua primeira fonte de renda
+            Comece adicionando sua primeira fonte de renda para
+            {{ dateStore.currentMonthName }}
           </p>
           <Button variant="primary" :icon="PlusIcon" @click="openModal()">
             Adicionar Primeira Entrada
@@ -160,6 +218,9 @@
           </div>
         </div>
       </div>
+
+      <!-- REMOVIDO: Botão duplicado "Adicionar Nova Entrada" -->
+      <!-- Esta seção foi removida para evitar duplicação -->
     </div>
 
     <!-- Floating Action Button (Mobile) -->
@@ -190,8 +251,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { useFinanceStore } from "../stores/finance";
+import { useDateReferenceStore } from "../stores/dateReference";
 import AppLayout from "../components/Layout/AppLayout.vue";
 import Button from "../components/UI/Button.vue";
 import IncomeModal from "../components/UI/IncomeModal.vue";
@@ -206,6 +268,9 @@ import {
   MagnifyingGlassIcon,
   PencilIcon,
   TrashIcon,
+  InformationCircleIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from "@heroicons/vue/24/outline";
 
 // Interface para Income
@@ -214,10 +279,13 @@ interface Income {
   description: string;
   amount: number;
   date: string;
+  monthReference: string;
   createdAt: string;
 }
 
+// Inicializar stores uma única vez
 const financeStore = useFinanceStore();
+const dateStore = useDateReferenceStore();
 
 // Estados reativos
 const loading = ref(false);
@@ -226,36 +294,19 @@ const deleteModalOpen = ref(false);
 const selectedIncome = ref<Income | null>(null);
 const incomeToDelete = ref<Income | null>(null);
 const searchTerm = ref("");
+const mounted = ref(false);
 
-// Computed properties
-const incomes = computed(() => financeStore.incomes);
-const totalIncome = computed(() => financeStore.totalIncome);
-
-const monthlyIncome = computed(() => {
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
-
-  return incomes.value
-    .filter((income) => {
-      const incomeDate = new Date(income.date);
-      return (
-        incomeDate.getMonth() === currentMonth &&
-        incomeDate.getFullYear() === currentYear
-      );
-    })
-    .reduce((sum, income) => sum + income.amount, 0);
-});
-
+// Computed properties baseados no mês atual
 const lastIncomeDate = computed(() => {
-  if (incomes.value.length === 0) return "Nenhuma";
-  const lastIncome = incomes.value[0];
+  if (financeStore.currentMonthIncomes.length === 0) return "Nenhuma";
+  const lastIncome = financeStore.currentMonthIncomes[0];
   return formatDate(lastIncome.date);
 });
 
 const filteredIncomes = computed(() => {
-  if (!searchTerm.value) return incomes.value;
+  if (!searchTerm.value) return financeStore.currentMonthIncomes;
 
-  return incomes.value.filter((income) =>
+  return financeStore.currentMonthIncomes.filter((income) =>
     income.description.toLowerCase().includes(searchTerm.value.toLowerCase())
   );
 });
@@ -328,8 +379,12 @@ const handleDelete = async () => {
 
 // Lifecycle
 onMounted(async () => {
+  if (mounted.value) return; // Prevenir montagem dupla
+  mounted.value = true;
+
   loading.value = true;
   try {
+    await nextTick();
     await financeStore.fetchIncomes();
   } catch (err) {
     console.error("Erro ao carregar entradas:", err);
@@ -337,4 +392,25 @@ onMounted(async () => {
     loading.value = false;
   }
 });
+
+// Watch para mudanças de mês (com debounce)
+let watchTimeout: NodeJS.Timeout;
+watch(
+  () => dateStore.monthYearString,
+  async (newValue, oldValue) => {
+    if (newValue === oldValue || !mounted.value) return;
+
+    clearTimeout(watchTimeout);
+    watchTimeout = setTimeout(async () => {
+      loading.value = true;
+      try {
+        await financeStore.fetchIncomes();
+      } catch (err) {
+        console.error("Erro ao carregar entradas:", err);
+      } finally {
+        loading.value = false;
+      }
+    }, 100);
+  }
+);
 </script>
