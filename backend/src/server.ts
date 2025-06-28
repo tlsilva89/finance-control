@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
 import authRoutes from "./routes/auth.js";
 import incomeRoutes from "./routes/income.js";
+import creditCardRoutes from "./routes/creditCards.js";
 
 dotenv.config();
 
@@ -42,6 +43,7 @@ app.use((req, res, next) => {
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/incomes", incomeRoutes);
+app.use("/api/credit-cards", creditCardRoutes); // Nova rota adicionada
 
 // Rota de teste
 app.get("/api/health", (req, res) => {
@@ -59,7 +61,7 @@ app.use(
     err: any,
     req: express.Request,
     res: express.Response,
-    _next: express.NextFunction // Prefixar com _ para indicar não usado
+    _next: express.NextFunction
   ) => {
     console.error("💥 Erro no servidor:", err);
     res
