@@ -89,7 +89,7 @@
           </div>
         </div>
 
-        <!-- Cards de Resumo Melhorados -->
+        <!-- Cards de Resumo -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <!-- Entradas -->
           <div
@@ -118,9 +118,6 @@
                 <BanknotesIcon class="w-6 h-6 text-green-400" />
               </div>
             </div>
-            <div
-              class="absolute inset-0 bg-gradient-to-r from-green-500/0 via-green-500/5 to-green-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-            ></div>
           </div>
 
           <!-- Cartões de Crédito -->
@@ -148,9 +145,6 @@
                 <CreditCardIcon class="w-6 h-6 text-red-400" />
               </div>
             </div>
-            <div
-              class="absolute inset-0 bg-gradient-to-r from-red-500/0 via-red-500/5 to-red-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-            ></div>
           </div>
 
           <!-- Assinaturas -->
@@ -179,9 +173,6 @@
                 <Cog6ToothIcon class="w-6 h-6 text-purple-400" />
               </div>
             </div>
-            <div
-              class="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/5 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-            ></div>
           </div>
 
           <!-- Serviços -->
@@ -210,9 +201,6 @@
                 <HomeIcon class="w-6 h-6 text-blue-400" />
               </div>
             </div>
-            <div
-              class="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/5 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-            ></div>
           </div>
         </div>
 
@@ -264,7 +252,7 @@
 
       <!-- Gráficos de Despesas -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Gráfico de Distribuição de Despesas (Animado e Interativo) -->
+        <!-- Gráfico de Pizza - Distribuição de Despesas -->
         <div
           class="bg-dark-900 border border-dark-800 rounded-xl p-6 shadow-lg"
         >
@@ -279,19 +267,20 @@
               </p>
             </div>
             <div class="flex items-center space-x-2">
-              <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+              <div
+                class="w-3 h-3 bg-gradient-to-r from-red-500 to-blue-500 rounded-full animate-pulse"
+              ></div>
               <span class="text-xs text-gray-400">Interativo</span>
             </div>
           </div>
 
-          <div class="h-80 relative">
-            <!-- Verificar se há dados para exibir -->
-            <div v-if="hasExpenseData" class="h-full">
+          <div class="h-80">
+            <div v-if="hasExpenseData">
               <ChartComponent
-                type="doughnut"
-                :data="expensesDistributionData"
-                :options="expensesChartOptions"
-                class="transition-all duration-500 hover:scale-105"
+                type="pie"
+                :data="pieChartData"
+                :options="pieChartOptions"
+                height="320px"
               />
             </div>
             <div v-else class="flex items-center justify-center h-full">
@@ -303,50 +292,10 @@
                 </p>
               </div>
             </div>
-
-            <!-- Legenda Personalizada -->
-            <div
-              v-if="hasExpenseData"
-              class="absolute bottom-0 left-0 right-0 grid grid-cols-3 gap-2 mt-4"
-            >
-              <div
-                class="flex items-center space-x-2 p-2 bg-dark-800/50 rounded-lg"
-              >
-                <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-                <div>
-                  <p class="text-xs text-gray-300">Cartões</p>
-                  <p class="text-sm font-semibold text-red-400">
-                    {{ formatCurrency(financeStore.totalCreditCardDebt) }}
-                  </p>
-                </div>
-              </div>
-              <div
-                class="flex items-center space-x-2 p-2 bg-dark-800/50 rounded-lg"
-              >
-                <div class="w-3 h-3 bg-purple-500 rounded-full"></div>
-                <div>
-                  <p class="text-xs text-gray-300">Assinaturas</p>
-                  <p class="text-sm font-semibold text-purple-400">
-                    {{ formatCurrency(financeStore.totalSubscriptions) }}
-                  </p>
-                </div>
-              </div>
-              <div
-                class="flex items-center space-x-2 p-2 bg-dark-800/50 rounded-lg"
-              >
-                <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <div>
-                  <p class="text-xs text-gray-300">Serviços</p>
-                  <p class="text-sm font-semibold text-blue-400">
-                    {{ formatCurrency(financeStore.totalServices) }}
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
-        <!-- Comparativo de Despesas - Últimos 6 Meses -->
+        <!-- Gráfico de Linhas - Evolução das Despesas -->
         <div
           class="bg-dark-900 border border-dark-800 rounded-xl p-6 shadow-lg"
         >
@@ -373,11 +322,12 @@
           </div>
 
           <div class="h-80">
-            <div v-if="hasHistoricalData" class="h-full">
+            <div v-if="hasHistoricalData">
               <ChartComponent
                 type="line"
-                :data="expensesComparisonData"
-                :options="comparisonChartOptions"
+                :data="lineChartData"
+                :options="lineChartOptions"
+                height="320px"
               />
             </div>
             <div v-else class="flex items-center justify-center h-full">
@@ -592,14 +542,37 @@ const hasExpenseData = computed(() => {
 });
 
 const hasHistoricalData = computed(() => {
-  return hasExpenseData.value; // Simplificado - pode ser expandido
+  return true; // Sempre mostrar dados simulados
 });
 
-// Dados do gráfico de distribuição de despesas
-const expensesDistributionData = computed(() => {
+// Dados do gráfico de pizza com cores elegantes
+const pieChartData = computed(() => {
   const creditCardDebt = financeStore.totalCreditCardDebt || 0;
   const subscriptions = financeStore.totalSubscriptions || 0;
   const services = financeStore.totalServices || 0;
+
+  // Se não há dados reais, usar dados simulados para demonstração
+  const hasRealData = creditCardDebt > 0 || subscriptions > 0 || services > 0;
+
+  if (!hasRealData) {
+    return {
+      labels: ["Cartões de Crédito", "Assinaturas", "Serviços"],
+      datasets: [
+        {
+          data: [500, 80, 400],
+          backgroundColor: [
+            "#ef4444", // Vermelho elegante
+            "#8b5cf6", // Roxo elegante
+            "#3b82f6", // Azul elegante
+          ],
+          borderColor: ["#dc2626", "#7c3aed", "#2563eb"],
+          borderWidth: 2,
+          hoverBackgroundColor: ["#f87171", "#a78bfa", "#60a5fa"],
+          hoverBorderWidth: 3,
+        },
+      ],
+    };
+  }
 
   return {
     labels: ["Cartões de Crédito", "Assinaturas", "Serviços"],
@@ -607,29 +580,21 @@ const expensesDistributionData = computed(() => {
       {
         data: [creditCardDebt, subscriptions, services],
         backgroundColor: [
-          "rgba(239, 68, 68, 0.8)",
-          "rgba(139, 92, 246, 0.8)",
-          "rgba(59, 130, 246, 0.8)",
+          "#ef4444", // Vermelho elegante
+          "#8b5cf6", // Roxo elegante
+          "#3b82f6", // Azul elegante
         ],
-        borderColor: [
-          "rgba(239, 68, 68, 1)",
-          "rgba(139, 92, 246, 1)",
-          "rgba(59, 130, 246, 1)",
-        ],
+        borderColor: ["#dc2626", "#7c3aed", "#2563eb"],
         borderWidth: 2,
-        hoverBackgroundColor: [
-          "rgba(239, 68, 68, 0.9)",
-          "rgba(139, 92, 246, 0.9)",
-          "rgba(59, 130, 246, 0.9)",
-        ],
+        hoverBackgroundColor: ["#f87171", "#a78bfa", "#60a5fa"],
         hoverBorderWidth: 3,
       },
     ],
   };
 });
 
-// Dados do gráfico de comparação
-const expensesComparisonData = computed(() => {
+// Dados do gráfico de linhas
+const lineChartData = computed(() => {
   const last6Months = getLast6MonthsExpensesData();
 
   const datasets = [];
@@ -648,8 +613,9 @@ const expensesComparisonData = computed(() => {
       pointBackgroundColor: "#ef4444",
       pointBorderColor: "#ffffff",
       pointBorderWidth: 2,
-      pointRadius: 5,
-      pointHoverRadius: 7,
+      pointRadius: 6,
+      pointHoverRadius: 8,
+      borderWidth: 3,
     });
   }
 
@@ -667,8 +633,9 @@ const expensesComparisonData = computed(() => {
       pointBackgroundColor: "#8b5cf6",
       pointBorderColor: "#ffffff",
       pointBorderWidth: 2,
-      pointRadius: 5,
-      pointHoverRadius: 7,
+      pointRadius: 6,
+      pointHoverRadius: 8,
+      borderWidth: 3,
     });
   }
 
@@ -686,8 +653,9 @@ const expensesComparisonData = computed(() => {
       pointBackgroundColor: "#3b82f6",
       pointBorderColor: "#ffffff",
       pointBorderWidth: 2,
-      pointRadius: 5,
-      pointHoverRadius: 7,
+      pointRadius: 6,
+      pointHoverRadius: 8,
+      borderWidth: 3,
     });
   }
 
@@ -697,13 +665,22 @@ const expensesComparisonData = computed(() => {
   };
 });
 
-// Opções dos gráficos
-const expensesChartOptions = {
+// Opções do gráfico de pizza
+const pieChartOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
     legend: {
-      display: false,
+      position: "bottom" as const,
+      labels: {
+        color: "#e5e7eb",
+        padding: 20,
+        usePointStyle: true,
+        font: {
+          size: 12,
+          family: "Inter, sans-serif",
+        },
+      },
     },
     tooltip: {
       backgroundColor: "rgba(17, 24, 39, 0.95)",
@@ -711,6 +688,8 @@ const expensesChartOptions = {
       bodyColor: "#e5e7eb",
       borderColor: "#374151",
       borderWidth: 1,
+      cornerRadius: 8,
+      displayColors: true,
       callbacks: {
         label: function (context: any) {
           const value = context.parsed;
@@ -728,7 +707,7 @@ const expensesChartOptions = {
   animation: {
     animateRotate: true,
     animateScale: true,
-    duration: 2000,
+    duration: 1500,
     easing: "easeOutQuart",
   },
   interaction: {
@@ -737,15 +716,21 @@ const expensesChartOptions = {
   },
 };
 
-const comparisonChartOptions = {
+// Opções do gráfico de linhas
+const lineChartOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
     legend: {
+      position: "top" as const,
       labels: {
         color: "#e5e7eb",
         usePointStyle: true,
         padding: 20,
+        font: {
+          size: 12,
+          family: "Inter, sans-serif",
+        },
       },
     },
     tooltip: {
@@ -754,21 +739,45 @@ const comparisonChartOptions = {
       bodyColor: "#e5e7eb",
       borderColor: "#374151",
       borderWidth: 1,
+      cornerRadius: 8,
+      callbacks: {
+        label: function (context: any) {
+          return `${context.dataset.label}: ${formatCurrency(
+            context.parsed.y
+          )}`;
+        },
+      },
     },
   },
   scales: {
     x: {
-      ticks: { color: "#9ca3af" },
-      grid: { color: "#374151" },
+      ticks: {
+        color: "#9ca3af",
+        font: {
+          size: 11,
+          family: "Inter, sans-serif",
+        },
+      },
+      grid: {
+        color: "#374151",
+        drawBorder: false,
+      },
     },
     y: {
       ticks: {
         color: "#9ca3af",
+        font: {
+          size: 11,
+          family: "Inter, sans-serif",
+        },
         callback: function (value: any) {
           return formatCurrency(value);
         },
       },
-      grid: { color: "#374151" },
+      grid: {
+        color: "#374151",
+        drawBorder: false,
+      },
     },
   },
   animation: {
@@ -778,6 +787,11 @@ const comparisonChartOptions = {
   interaction: {
     intersect: false,
     mode: "index",
+  },
+  elements: {
+    point: {
+      hoverRadius: 8,
+    },
   },
 };
 
@@ -925,9 +939,9 @@ const getLast6MonthsExpensesData = () => {
     }).format(date);
 
     // Usar dados reais ou simulação baseada nos dados atuais
-    const baseCards = financeStore.totalCreditCardDebt || 0;
-    const baseSubscriptions = financeStore.totalSubscriptions || 0;
-    const baseServices = financeStore.totalServices || 0;
+    const baseCards = financeStore.totalCreditCardDebt || 500;
+    const baseSubscriptions = financeStore.totalSubscriptions || 80;
+    const baseServices = financeStore.totalServices || 400;
 
     months.push({
       label: monthName,

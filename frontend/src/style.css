@@ -1,7 +1,17 @@
 @import "tailwindcss/base";
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap");
+
+/* Variáveis CSS para cores Arch Linux */
+:root {
+  --arch-blue: #1793d1;
+  --arch-cyan: #1793d1;
+  --arch-gray: #333333;
+  --arch-blue-dark: #0f7bb3;
+  --arch-cyan-light: #4db6ea;
+}
 
 @layer base {
   html {
@@ -18,6 +28,10 @@
     @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-dark-900;
   }
 
+  .btn-arch {
+    @apply bg-arch-blue hover:bg-arch-blue-dark text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-arch-cyan focus:ring-offset-2 focus:ring-offset-slate-900;
+  }
+
   .card {
     @apply bg-dark-900 border border-dark-800 rounded-xl p-4 sm:p-6 shadow-lg transition-all duration-200 hover:shadow-xl;
   }
@@ -26,12 +40,111 @@
     @apply bg-dark-800 border border-dark-700 text-gray-100 rounded-lg px-3 py-2 sm:px-4 sm:py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200;
   }
 
+  .input-field-arch {
+    @apply bg-slate-900/60 border border-slate-600/50 text-white rounded-lg px-4 py-4 focus:outline-none focus:ring-2 focus:ring-arch-cyan focus:border-arch-cyan transition-all duration-300 backdrop-blur-sm font-financial;
+  }
+
+  .logo-financial {
+    @apply font-financial font-bold tracking-tight;
+  }
+
   .custom-toast {
     @apply bg-dark-800 border border-dark-700;
   }
 
   .custom-toast-body {
     @apply text-gray-100;
+  }
+}
+
+/* Classes utilitárias para cores Arch */
+@layer utilities {
+  .bg-arch-blue {
+    background-color: var(--arch-blue);
+  }
+
+  .bg-arch-cyan {
+    background-color: var(--arch-cyan);
+  }
+
+  .bg-arch-gray {
+    background-color: var(--arch-gray);
+  }
+
+  .bg-arch-blue-dark {
+    background-color: var(--arch-blue-dark);
+  }
+
+  .bg-arch-cyan-light {
+    background-color: var(--arch-cyan-light);
+  }
+
+  .text-arch-blue {
+    color: var(--arch-blue);
+  }
+
+  .text-arch-cyan {
+    color: var(--arch-cyan);
+  }
+
+  .text-arch-gray {
+    color: var(--arch-gray);
+  }
+
+  .border-arch-blue {
+    border-color: var(--arch-blue);
+  }
+
+  .border-arch-cyan {
+    border-color: var(--arch-cyan);
+  }
+
+  .ring-arch-blue {
+    --tw-ring-color: var(--arch-blue);
+  }
+
+  .ring-arch-cyan {
+    --tw-ring-color: var(--arch-cyan);
+  }
+
+  .from-arch-blue {
+    --tw-gradient-from: var(--arch-blue);
+  }
+
+  .to-arch-cyan {
+    --tw-gradient-to: var(--arch-cyan);
+  }
+
+  .hover\:from-arch-cyan:hover {
+    --tw-gradient-from: var(--arch-cyan);
+  }
+
+  .hover\:to-arch-blue:hover {
+    --tw-gradient-to: var(--arch-blue);
+  }
+
+  .focus\:ring-arch-cyan:focus {
+    --tw-ring-color: var(--arch-cyan);
+  }
+
+  .focus\:border-arch-cyan:focus {
+    border-color: var(--arch-cyan);
+  }
+
+  .group-focus-within\:text-arch-cyan:focus-within {
+    color: var(--arch-cyan);
+  }
+
+  .hover\:text-arch-cyan\/80:hover {
+    color: rgba(23, 147, 209, 0.8);
+  }
+
+  .decoration-arch-cyan\/50 {
+    text-decoration-color: rgba(23, 147, 209, 0.5);
+  }
+
+  .decoration-arch-cyan\/80 {
+    text-decoration-color: rgba(23, 147, 209, 0.8);
   }
 }
 
@@ -45,11 +158,14 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-dark-700 rounded-full;
+  background: var(--arch-blue);
+  border-radius: 3px;
+  opacity: 0.3;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-dark-600;
+  background: var(--arch-cyan);
+  opacity: 0.5;
 }
 
 /* Responsive utilities */

@@ -1,101 +1,102 @@
 <template>
-  <div class="relative">
-    <canvas :ref="chartRef"></canvas>
+  <div class="chart-container" :style="{ height: height }">
+    <canvas ref="chartCanvas"></canvas>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from "vue";
+import { ref, onMounted, onUnmounted, watch, nextTick } from "vue";
 import {
-  Chart,
+  Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
-  BarElement,
+  LineController,
   Title,
   Tooltip,
   Legend,
   ArcElement,
+  PieController,
+  DoughnutController,
+  BarElement,
+  BarController,
   Filler,
 } from "chart.js";
 
-Chart.register(
+// Registrar TODOS os componentes necessários do Chart.js
+ChartJS.register(
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
-  BarElement,
+  LineController,
   Title,
   Tooltip,
   Legend,
   ArcElement,
+  PieController,
+  DoughnutController,
+  BarElement,
+  BarController,
   Filler
 );
 
 interface Props {
-  type: "line" | "bar" | "doughnut" | "pie";
+  type: "line" | "bar" | "pie" | "doughnut";
   data: any;
   options?: any;
+  height?: string;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  height: "100%",
+  options: () => ({}),
+});
 
-const chartRef = ref<HTMLCanvasElement>();
-let chartInstance: Chart | null = null;
+const chartCanvas = ref<HTMLCanvasElement | null>(null);
+let chartInstance: ChartJS | null = null;
 
-const defaultOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      labels: {
-        color: "#e5e7eb",
-      },
-    },
-  },
-  scales: {
-    x: {
-      ticks: {
-        color: "#e5e7eb",
-      },
-      grid: {
-        color: "#374151",
-      },
-    },
-    y: {
-      ticks: {
-        color: "#e5e7eb",
-      },
-      grid: {
-        color: "#374151",
-      },
-    },
-  },
-};
+const createChart = async () => {
+  if (!chartCanvas.value) return;
 
-const createChart = () => {
-  if (!chartRef.value) return;
+  await nextTick();
 
-  const ctx = chartRef.value.getContext("2d");
+  // Destruir gráfico existente se houver
+  if (chartInstance) {
+    chartInstance.destroy();
+    chartInstance = null;
+  }
+
+  const ctx = chartCanvas.value.getContext("2d");
   if (!ctx) return;
 
-  chartInstance = new Chart(ctx, {
-    type: props.type,
-    data: props.data,
-    options: {
-      ...defaultOptions,
-      ...props.options,
-    },
-  });
+  try {
+    chartInstance = new ChartJS(ctx, {
+      type: props.type,
+      data: props.data,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        ...props.options,
+      },
+    });
+  } catch (error) {
+    console.error("Erro ao criar gráfico:", error);
+  }
 };
 
 const updateChart = () => {
-  if (chartInstance) {
+  if (chartInstance && props.data) {
     chartInstance.data = props.data;
-    chartInstance.update();
+    chartInstance.update("active");
   }
 };
+
+// Watchers
+watch(() => props.data, updateChart, { deep: true });
+watch(() => props.type, createChart);
+watch(() => props.options, createChart, { deep: true });
 
 onMounted(() => {
   createChart();
@@ -104,8 +105,19 @@ onMounted(() => {
 onUnmounted(() => {
   if (chartInstance) {
     chartInstance.destroy();
+    chartInstance = null;
   }
 });
-
-watch(() => props.data, updateChart, { deep: true });
 </script>
+
+<style scoped>
+.chart-container {
+  position: relative;
+  width: 100%;
+}
+
+canvas {
+  max-width: 100%;
+  height: auto;
+}
+</style>
