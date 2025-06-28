@@ -8,16 +8,20 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  name          String
-  email         String         @unique
-  password      String
-  incomes       Income[]
-  creditCards   CreditCard[]
-  subscriptions Subscription[]
-  services      Service[]
-  transactions  Transaction[]
-  createdAt     DateTime       @default(now())
+  id                String         @id @default(cuid())
+  username          String         @unique  // Mudança: username ao invés de email
+  name              String
+  birthDate         DateTime       // Nova: data de nascimento
+  password          String
+  securityQuestion  String         // Pergunta de segurança obrigatória
+  securityAnswer    String         // Resposta criptografada
+  incomes           Income[]
+  creditCards       CreditCard[]
+  subscriptions     Subscription[]
+  services          Service[]
+  transactions      Transaction[]
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
   @@map("users")
 }

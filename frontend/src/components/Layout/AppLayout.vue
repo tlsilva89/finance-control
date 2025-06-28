@@ -12,11 +12,11 @@
         class="flex items-center justify-between h-16 border-b border-dark-800/50 px-6 bg-dark-800/80"
       >
         <div class="flex items-center space-x-3">
-          <!-- Logo Tipográfico Elegante sem fundo colorido -->
+          <!-- Logo Tipográfico Elegante -->
           <div class="relative">
             <div class="text-2xl font-bold tracking-tight">
-              <span class="text-white">Finance</span
-              ><span class="text-primary-400 font-light">Control</span>
+              <span class="text-white">Finance</span>
+              <span class="text-primary-400 font-light">Control</span>
             </div>
             <div
               class="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-primary-400 to-transparent rounded-full"
@@ -70,7 +70,7 @@
         </router-link>
       </nav>
 
-      <!-- User Info Movido para o Final da Sidebar -->
+      <!-- User Info Atualizado - Sem Email -->
       <div
         class="mt-auto p-4 border-t border-dark-800/50 bg-dark-900/50 backdrop-blur-sm"
       >
@@ -102,7 +102,7 @@
             <p
               class="text-xs text-gray-400 truncate group-hover:text-gray-300 transition-colors"
             >
-              {{ user?.email || "email@exemplo.com" }}
+              @{{ user?.username || "usuario" }}
             </p>
           </div>
           <!-- Indicador de Menu -->
@@ -175,7 +175,7 @@
               </div>
             </div>
 
-            <!-- User Menu -->
+            <!-- User Menu Atualizado -->
             <div class="relative">
               <button
                 @click="userMenuOpen = !userMenuOpen"
@@ -185,7 +185,9 @@
                   <p class="text-sm font-medium text-gray-100">
                     {{ user?.name || "Usuário" }}
                   </p>
-                  <p class="text-xs text-gray-400">Online</p>
+                  <p class="text-xs text-gray-400">
+                    @{{ user?.username || "usuario" }}
+                  </p>
                 </div>
                 <div class="relative">
                   <!-- Avatar Melhorado no Header -->
@@ -204,35 +206,58 @@
                 />
               </button>
 
-              <!-- User Dropdown -->
+              <!-- User Dropdown Atualizado -->
               <div
                 v-if="userMenuOpen"
-                class="absolute right-0 mt-2 w-48 bg-dark-800/95 backdrop-blur-xl border border-dark-700/50 rounded-xl shadow-2xl py-2 z-50"
+                class="absolute right-0 mt-2 w-56 bg-dark-800/95 backdrop-blur-xl border border-dark-700/50 rounded-xl shadow-2xl py-2 z-50"
                 @click.stop
               >
                 <div class="px-4 py-3 border-b border-dark-700/50">
                   <div class="flex items-center space-x-3">
                     <div
-                      class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center"
+                      class="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center"
                     >
-                      <UserIcon class="w-5 h-5 text-white" />
+                      <UserIcon class="w-6 h-6 text-white" />
                     </div>
-                    <div>
-                      <p class="text-sm font-medium text-gray-100">
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-medium text-gray-100 truncate">
                         {{ user?.name }}
                       </p>
-                      <p class="text-xs text-gray-400">{{ user?.email }}</p>
+                      <p class="text-xs text-gray-400 truncate">
+                        @{{ user?.username }}
+                      </p>
                     </div>
                   </div>
                 </div>
 
-                <button
-                  @click="logout"
-                  class="w-full flex items-center px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
-                >
-                  <ArrowRightOnRectangleIcon class="w-4 h-4 mr-3" />
-                  Sair da Conta
-                </button>
+                <!-- Menu Items -->
+                <div class="py-1">
+                  <button
+                    @click="openChangePassword"
+                    class="w-full flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-dark-700/50 hover:text-white transition-colors"
+                  >
+                    <KeyIcon class="w-4 h-4 mr-3" />
+                    Alterar Senha
+                  </button>
+
+                  <button
+                    @click="openSecuritySettings"
+                    class="w-full flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-dark-700/50 hover:text-white transition-colors"
+                  >
+                    <ShieldCheckIcon class="w-4 h-4 mr-3" />
+                    Pergunta de Segurança
+                  </button>
+                </div>
+
+                <div class="border-t border-dark-700/50 py-1">
+                  <button
+                    @click="logout"
+                    class="w-full flex items-center px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
+                  >
+                    <ArrowRightOnRectangleIcon class="w-4 h-4 mr-3" />
+                    Sair da Conta
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -300,6 +325,8 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   UserIcon,
+  KeyIcon,
+  ShieldCheckIcon,
 } from "@heroicons/vue/24/outline";
 
 const route = useRoute();
@@ -375,6 +402,18 @@ const logout = () => {
   userMenuOpen.value = false;
   authStore.logout();
   router.push("/login");
+};
+
+const openChangePassword = () => {
+  userMenuOpen.value = false;
+  // Implementar modal ou página de alteração de senha
+  console.log("Abrir alteração de senha");
+};
+
+const openSecuritySettings = () => {
+  userMenuOpen.value = false;
+  // Implementar modal ou página de configurações de segurança
+  console.log("Abrir configurações de segurança");
 };
 
 // Close dropdowns when clicking outside

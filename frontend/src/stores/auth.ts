@@ -4,8 +4,8 @@ import { useNotification } from "../composables/useNotification";
 
 interface User {
   id: string;
+  username: string;
   name: string;
-  email: string;
 }
 
 interface AuthState {
@@ -24,14 +24,14 @@ export const useAuthStore = defineStore("auth", {
   }),
 
   actions: {
-    async login(email: string, password: string) {
+    async login(username: string, password: string) {
       const { success, error } = useNotification();
       this.loading = true;
 
       try {
         console.log("Fazendo login...");
         const response = await api.post("/api/auth/login", {
-          email,
+          username,
           password,
         });
         const { user, token } = response.data;
@@ -54,16 +54,26 @@ export const useAuthStore = defineStore("auth", {
       }
     },
 
-    async register(name: string, email: string, password: string) {
+    async register(
+      username: string,
+      name: string,
+      birthDate: string,
+      password: string,
+      securityQuestion: string,
+      securityAnswer: string
+    ) {
       const { success, error } = useNotification();
       this.loading = true;
 
       try {
         console.log("Registrando usuário...");
         const response = await api.post("/api/auth/register", {
+          username,
           name,
-          email,
+          birthDate,
           password,
+          securityQuestion,
+          securityAnswer,
         });
         const { user, token } = response.data;
 
