@@ -24,15 +24,29 @@ const authenticateToken = (req: any, res: Response, next: any) => {
   );
 };
 
-// GET - Listar serviços
+// GET - Listar serviços com filtro por mês
 router.get("/", authenticateToken, async (req: any, res: Response) => {
   try {
-    console.log("Buscando serviços para usuário:", req.userId);
+    const { monthReference } = req.query;
+    console.log(
+      "Buscando serviços para usuário:",
+      req.userId,
+      "mês:",
+      monthReference
+    );
+
+    const whereClause: any = { userId: req.userId };
+
+    if (monthReference) {
+      whereClause.monthReference = monthReference;
+    }
+
     const services = await prisma.service.findMany({
-      where: { userId: req.userId },
+      where: whereClause,
       orderBy: { createdAt: "desc" },
     });
-    console.log("Serviços encontrados:", services);
+
+    console.log("Serviços encontrados:", services.length);
     res.json(services);
   } catch (error) {
     console.error("Erro ao buscar serviços:", error);
@@ -46,7 +60,7 @@ router.post("/", authenticateToken, async (req: any, res: Response) => {
     console.log("Criando serviço para usuário:", req.userId);
     console.log("Dados do serviço:", req.body);
 
-    const { name, amount, dueDate, category } = req.body;
+    const { name, amount, dueDate, category, monthReference } = req.body;
 
     // Validação básica
     if (!name || amount === undefined || !dueDate || !category) {
@@ -55,12 +69,21 @@ router.post("/", authenticateToken, async (req: any, res: Response) => {
         .json({ error: "Todos os campos são obrigatórios" });
     }
 
+    // Se monthReference não for fornecido, gerar automaticamente
+    const finalMonthReference =
+      monthReference ||
+      (() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      })();
+
     const service = await prisma.service.create({
       data: {
         name,
         amount: parseFloat(amount),
         dueDate: parseInt(dueDate),
         category,
+        monthReference: finalMonthReference,
         userId: req.userId,
       },
     });
@@ -77,21 +100,27 @@ router.post("/", authenticateToken, async (req: any, res: Response) => {
 router.put("/:id", authenticateToken, async (req: any, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, amount, dueDate, category } = req.body;
+    const { name, amount, dueDate, category, monthReference } = req.body;
 
     console.log("Atualizando serviço:", id, "para usuário:", req.userId);
+
+    const updateData: any = {
+      name,
+      amount: parseFloat(amount),
+      dueDate: parseInt(dueDate),
+      category,
+    };
+
+    if (monthReference !== undefined) {
+      updateData.monthReference = monthReference;
+    }
 
     const service = await prisma.service.update({
       where: {
         id,
         userId: req.userId,
       },
-      data: {
-        name,
-        amount: parseFloat(amount),
-        dueDate: parseInt(dueDate),
-        category,
-      },
+      data: updateData,
     });
 
     console.log("Serviço atualizado:", service);

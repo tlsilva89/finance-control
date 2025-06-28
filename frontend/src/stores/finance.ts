@@ -8,7 +8,7 @@ interface Income {
   description: string;
   amount: number;
   date: string;
-  monthReference: string; // Novo campo
+  monthReference: string;
   createdAt: string;
 }
 
@@ -18,7 +18,7 @@ interface CreditCard {
   limit: number;
   currentDebt: number;
   dueDate: number;
-  monthReference: string; // Novo campo
+  monthReference: string;
   createdAt: string;
 }
 
@@ -28,7 +28,7 @@ interface Subscription {
   amount: number;
   renewalDate: string;
   category: string;
-  monthReference: string; // Novo campo
+  monthReference: string;
   createdAt: string;
 }
 
@@ -38,7 +38,7 @@ interface Service {
   amount: number;
   dueDate: number;
   category: string;
-  monthReference: string; // Novo campo
+  monthReference: string;
   createdAt: string;
 }
 

@@ -24,15 +24,29 @@ const authenticateToken = (req: any, res: Response, next: any) => {
   );
 };
 
-// GET - Listar cartões
+// GET - Listar cartões com filtro por mês
 router.get("/", authenticateToken, async (req: any, res: Response) => {
   try {
-    console.log("Buscando cartões para usuário:", req.userId);
+    const { monthReference } = req.query;
+    console.log(
+      "Buscando cartões para usuário:",
+      req.userId,
+      "mês:",
+      monthReference
+    );
+
+    const whereClause: any = { userId: req.userId };
+
+    if (monthReference) {
+      whereClause.monthReference = monthReference;
+    }
+
     const creditCards = await prisma.creditCard.findMany({
-      where: { userId: req.userId },
+      where: whereClause,
       orderBy: { createdAt: "desc" },
     });
-    console.log("Cartões encontrados:", creditCards);
+
+    console.log("Cartões encontrados:", creditCards.length);
     res.json(creditCards);
   } catch (error) {
     console.error("Erro ao buscar cartões:", error);
@@ -46,7 +60,7 @@ router.post("/", authenticateToken, async (req: any, res: Response) => {
     console.log("Criando cartão para usuário:", req.userId);
     console.log("Dados do cartão:", req.body);
 
-    const { name, limit, currentDebt, dueDate } = req.body;
+    const { name, limit, currentDebt, dueDate, monthReference } = req.body;
 
     // Validação básica
     if (!name || limit === undefined || currentDebt === undefined || !dueDate) {
@@ -55,12 +69,21 @@ router.post("/", authenticateToken, async (req: any, res: Response) => {
         .json({ error: "Todos os campos são obrigatórios" });
     }
 
+    // Se monthReference não for fornecido, gerar automaticamente
+    const finalMonthReference =
+      monthReference ||
+      (() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      })();
+
     const creditCard = await prisma.creditCard.create({
       data: {
         name,
         limit: parseFloat(limit),
         currentDebt: parseFloat(currentDebt),
         dueDate: parseInt(dueDate),
+        monthReference: finalMonthReference,
         userId: req.userId,
       },
     });
@@ -77,21 +100,27 @@ router.post("/", authenticateToken, async (req: any, res: Response) => {
 router.put("/:id", authenticateToken, async (req: any, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, limit, currentDebt, dueDate } = req.body;
+    const { name, limit, currentDebt, dueDate, monthReference } = req.body;
 
     console.log("Atualizando cartão:", id, "para usuário:", req.userId);
+
+    const updateData: any = {
+      name,
+      limit: parseFloat(limit),
+      currentDebt: parseFloat(currentDebt),
+      dueDate: parseInt(dueDate),
+    };
+
+    if (monthReference !== undefined) {
+      updateData.monthReference = monthReference;
+    }
 
     const creditCard = await prisma.creditCard.update({
       where: {
         id,
         userId: req.userId,
       },
-      data: {
-        name,
-        limit: parseFloat(limit),
-        currentDebt: parseFloat(currentDebt),
-        dueDate: parseInt(dueDate),
-      },
+      data: updateData,
     });
 
     console.log("Cartão atualizado:", creditCard);

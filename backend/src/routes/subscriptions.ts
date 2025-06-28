@@ -24,15 +24,29 @@ const authenticateToken = (req: any, res: Response, next: any) => {
   );
 };
 
-// GET - Listar assinaturas
+// GET - Listar assinaturas com filtro por mês
 router.get("/", authenticateToken, async (req: any, res: Response) => {
   try {
-    console.log("Buscando assinaturas para usuário:", req.userId);
+    const { monthReference } = req.query;
+    console.log(
+      "Buscando assinaturas para usuário:",
+      req.userId,
+      "mês:",
+      monthReference
+    );
+
+    const whereClause: any = { userId: req.userId };
+
+    if (monthReference) {
+      whereClause.monthReference = monthReference;
+    }
+
     const subscriptions = await prisma.subscription.findMany({
-      where: { userId: req.userId },
+      where: whereClause,
       orderBy: { createdAt: "desc" },
     });
-    console.log("Assinaturas encontradas:", subscriptions);
+
+    console.log("Assinaturas encontradas:", subscriptions.length);
     res.json(subscriptions);
   } catch (error) {
     console.error("Erro ao buscar assinaturas:", error);
@@ -46,7 +60,7 @@ router.post("/", authenticateToken, async (req: any, res: Response) => {
     console.log("Criando assinatura para usuário:", req.userId);
     console.log("Dados da assinatura:", req.body);
 
-    const { name, amount, renewalDate, category } = req.body;
+    const { name, amount, renewalDate, category, monthReference } = req.body;
 
     // Validação básica
     if (!name || amount === undefined || !renewalDate || !category) {
@@ -55,12 +69,21 @@ router.post("/", authenticateToken, async (req: any, res: Response) => {
         .json({ error: "Todos os campos são obrigatórios" });
     }
 
+    // Se monthReference não for fornecido, gerar automaticamente
+    const finalMonthReference =
+      monthReference ||
+      (() => {
+        const renewalDateObj = new Date(renewalDate);
+        return `${renewalDateObj.getFullYear()}-${String(renewalDateObj.getMonth() + 1).padStart(2, "0")}`;
+      })();
+
     const subscription = await prisma.subscription.create({
       data: {
         name,
         amount: parseFloat(amount),
         renewalDate: new Date(renewalDate),
         category,
+        monthReference: finalMonthReference,
         userId: req.userId,
       },
     });
@@ -77,21 +100,27 @@ router.post("/", authenticateToken, async (req: any, res: Response) => {
 router.put("/:id", authenticateToken, async (req: any, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, amount, renewalDate, category } = req.body;
+    const { name, amount, renewalDate, category, monthReference } = req.body;
 
     console.log("Atualizando assinatura:", id, "para usuário:", req.userId);
+
+    const updateData: any = {
+      name,
+      amount: parseFloat(amount),
+      renewalDate: new Date(renewalDate),
+      category,
+    };
+
+    if (monthReference !== undefined) {
+      updateData.monthReference = monthReference;
+    }
 
     const subscription = await prisma.subscription.update({
       where: {
         id,
         userId: req.userId,
       },
-      data: {
-        name,
-        amount: parseFloat(amount),
-        renewalDate: new Date(renewalDate),
-        category,
-      },
+      data: updateData,
     });
 
     console.log("Assinatura atualizada:", subscription);
