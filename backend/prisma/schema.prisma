@@ -9,9 +9,9 @@ datasource db {
 
 model User {
   id                String         @id @default(cuid())
-  username          String         @unique  // Mudança: username ao invés de email
+  username          String         @unique  // Username único
   name              String
-  birthDate         DateTime       // Nova: data de nascimento
+  birthDate         DateTime       // Data de nascimento
   password          String
   securityQuestion  String         // Pergunta de segurança obrigatória
   securityAnswer    String         // Resposta criptografada
@@ -33,7 +33,7 @@ model Income {
   date            DateTime
   monthReference  String   @default("2025-06")
   userId          String
-  user            User     @relation(fields: [userId], references: [id])
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt       DateTime @default(now())
 
   @@map("incomes")
@@ -47,7 +47,7 @@ model CreditCard {
   dueDate         Int
   monthReference  String        @default("2025-06")
   userId          String
-  user            User          @relation(fields: [userId], references: [id])
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions    Transaction[]
   createdAt       DateTime      @default(now())
 
@@ -62,7 +62,7 @@ model Subscription {
   category        String
   monthReference  String   @default("2025-06")
   userId          String
-  user            User     @relation(fields: [userId], references: [id])
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt       DateTime @default(now())
 
   @@map("subscriptions")
@@ -76,7 +76,7 @@ model Service {
   category        String
   monthReference  String   @default("2025-06")
   userId          String
-  user            User     @relation(fields: [userId], references: [id])
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt       DateTime @default(now())
 
   @@map("services")
@@ -90,9 +90,9 @@ model Transaction {
   category     String?
   date         DateTime
   userId       String
-  user         User        @relation(fields: [userId], references: [id])
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   creditCardId String?
-  creditCard   CreditCard? @relation(fields: [creditCardId], references: [id])
+  creditCard   CreditCard? @relation(fields: [creditCardId], references: [id], onDelete: SetNull)
   createdAt    DateTime    @default(now())
 
   @@map("transactions")
