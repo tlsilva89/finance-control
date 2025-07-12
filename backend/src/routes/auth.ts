@@ -5,6 +5,12 @@ import { prisma } from "../server.js";
 
 const router = Router();
 
+// Função auxiliar para tratamento de erros
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  return String(error);
+};
+
 interface RegisterRequest {
   username: string;
   name: string;
@@ -161,7 +167,9 @@ router.post(
       res.status(500).json({
         error: "Erro interno do servidor",
         details:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+          process.env.NODE_ENV === "development"
+            ? getErrorMessage(error)
+            : undefined,
       });
     }
   }
@@ -219,7 +227,9 @@ router.post(
       res.status(500).json({
         error: "Erro interno do servidor",
         details:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+          process.env.NODE_ENV === "development"
+            ? getErrorMessage(error)
+            : undefined,
       });
     }
   }
@@ -273,7 +283,9 @@ router.post(
         available: false,
         message: "Erro interno do servidor",
         details:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+          process.env.NODE_ENV === "development"
+            ? getErrorMessage(error)
+            : undefined,
       });
     }
   }
@@ -323,7 +335,9 @@ router.post(
       res.status(500).json({
         error: "Erro interno do servidor",
         details:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+          process.env.NODE_ENV === "development"
+            ? getErrorMessage(error)
+            : undefined,
       });
     }
   }
@@ -392,7 +406,9 @@ router.post(
       res.status(500).json({
         error: "Erro interno do servidor",
         details:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+          process.env.NODE_ENV === "development"
+            ? getErrorMessage(error)
+            : undefined,
       });
     }
   }
@@ -452,7 +468,9 @@ router.post(
       res.status(500).json({
         error: "Erro interno do servidor",
         details:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+          process.env.NODE_ENV === "development"
+            ? getErrorMessage(error)
+            : undefined,
       });
     }
   }
@@ -499,7 +517,9 @@ router.post(
       res.status(500).json({
         error: "Erro interno do servidor",
         details:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+          process.env.NODE_ENV === "development"
+            ? getErrorMessage(error)
+            : undefined,
       });
     }
   }

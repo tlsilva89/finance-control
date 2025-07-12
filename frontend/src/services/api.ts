@@ -2,8 +2,12 @@ import axios from "axios";
 import { useAuthStore } from "../stores/auth";
 
 const api = axios.create({
-  baseURL: "http://localhost:3000",
+  baseURL:
+    import.meta.env.VITE_API_URL || "http://api.finance-control.local:3001",
   timeout: 10000,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 // Interceptor para adicionar token automaticamente
