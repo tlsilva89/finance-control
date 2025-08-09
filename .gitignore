@@ -1,0 +1,277 @@
+# ========================================
+# FINANCE CONTROL PROJECT - GITIGNORE
+# ========================================
+
+# ========================================
+# FRONTEND (Vue.js/Node.js/Vite)
+# ========================================
+
+# Dependencies
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.pnpm-store/
+
+# Build outputs
+frontend/build/
+frontend/out/
+
+# Vite
+frontend/.vite/
+frontend/vite.config.js.timestamp-*
+frontend/vite.config.ts.timestamp-*
+
+# Cache directories
+frontend/.cache/
+frontend/.parcel-cache/
+frontend/.nuxt/
+frontend/.next/
+frontend/.svelte-kit/
+
+# Logs
+frontend/logs/
+frontend/*.log
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/lerna-debug.log*
+frontend/.pnpm-debug.log*
+
+# Runtime data
+frontend/pids/
+frontend/*.pid
+frontend/*.seed
+frontend/*.pid.lock
+
+# Coverage directory used by tools like istanbul
+frontend/coverage/
+frontend/*.lcov
+
+# TypeScript
+frontend/*.tsbuildinfo
+
+# ========================================
+# BACKEND (.NET/C#)
+# ========================================
+
+# Build results
+backend/bin/
+backend/obj/
+backend/out/
+
+# MSBuild Binary and Structured Log
+backend/*.binlog
+
+# NuGet
+backend/packages/
+backend/*.nupkg
+backend/*.snupkg
+backend/.nuget/
+backend/**/packages.lock.json
+
+# .NET Core
+backend/project.lock.json
+backend/project.fragment.lock.json
+backend/artifacts/
+
+# Entity Framework
+backend/Migrations/
+
+# User-specific files
+backend/*.rsuser
+backend/*.suo
+backend/*.user
+backend/*.userosscache
+backend/*.sln.docstates
+
+# Visual Studio
+backend/.vs/
+backend/.vscode/settings.json
+backend/.vscode/tasks.json
+backend/.vscode/launch.json
+
+# Rider
+backend/.idea/
+
+# ========================================
+# DATABASE
+# ========================================
+
+# SQLite databases
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+backend/FinanceControl.db
+backend/FinanceControl.db-shm
+backend/FinanceControl.db-wal
+
+# Database backups
+*.bak
+*.backup
+
+# ========================================
+# LOGS & TEMPORARY FILES
+# ========================================
+
+# Log files
+*.log
+logs/
+log/
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ========================================
+# IDE & EDITOR FILES
+# ========================================
+
+# Visual Studio Code
+.vscode/
+!.vscode/extensions.json
+
+# Visual Studio
+.vs/
+*.vscode/
+
+# JetBrains IDEs
+.idea/
+*.swp
+*.swo
+*~
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*.swn
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ========================================
+# CONFIGURATION & SECRETS
+# ========================================
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Configuration files with secrets
+appsettings.Production.json
+appsettings.Staging.json
+config/production.json
+config/staging.json
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+*.cert
+*.pfx
+
+# ========================================
+# PACKAGE MANAGERS
+# ========================================
+
+# npm
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Yarn
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# pnpm
+.pnpm-store/
+
+# ========================================
+# TESTING & COVERAGE
+# ========================================
+
+# Test results
+TestResults/
+coverage/
+*.lcov
+.nyc_output/
+
+# Jest
+jest-results.json
+
+# ========================================
+# DEPLOYMENT & DOCKER
+# ========================================
+
+# Docker
+Dockerfile.prod
+docker-compose.override.yml
+.dockerignore
+
+# Deployment scripts
+deploy/
+deployment/
+publish/
+
+# ========================================
+# MISCELLANEOUS
+# ========================================
+
+# Runtime directories
+run/
+var/
+
+# Lock files (optional - uncomment if needed)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Backup files
+*.backup
+*.bak
+*.old
+
+# Archive files
+*.zip
+*.tar.gz
+*.7z
+*.rar
+
+# Documentation build
+docs/build/
+site/
+
+# Auto-generated files
+*.generated.*
