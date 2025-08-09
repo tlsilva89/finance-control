@@ -101,7 +101,7 @@
 ### 1️⃣ **Clone o Repositório**
 
 ```bash
-git clone https://github.com/seu-usuario/finance-control.git
+git clone https://github.com/tlsilva89/finance-control.git
 cd finance-control
 ```
 
@@ -119,11 +119,11 @@ dotnet ef migrations add InitialCreate
 dotnet ef database update
 
 # Execute o backend
-dotnet run --urls "http://localhost:3001"
+dotnet run --urls "http://localhost:5188"
 ```
 
-✅ **Backend disponível em:** `http://localhost:3001`  
-📖 **Swagger UI:** `http://localhost:3001/swagger`
+✅ **Backend disponível em:** `http://localhost:5188`  
+📖 **Swagger UI:** `http://localhost:5188/swagger`
 
 ### 3️⃣ **Configuração do Frontend**
 
@@ -135,7 +135,7 @@ cd frontend
 npm install
 
 # Configure a variável de ambiente (opcional)
-echo "VITE_API_URL=http://localhost:3001" > .env.local
+echo "VITE_API_URL=http://localhost:5188" > .env.local
 
 # Execute o frontend em modo desenvolvimento
 npm run dev
@@ -232,7 +232,7 @@ finance-control/
 **Frontend** (`.env.local`):
 
 ```env
-VITE_API_URL=http://localhost:3001
+VITE_API_URL=http://localhost:5188
 ```
 
 **Backend** (`appsettings.json`):
@@ -321,9 +321,9 @@ Agradecimentos especiais às tecnologias e comunidades que tornaram este projeto
 
 ### ⭐ Se este projeto te ajudou, deixe uma estrela!
 
-[![GitHub stars](https://img.shields.io/github/stars/seu-usuario/finance-control?style=social)](https://github.com/seu-usuario/finance-control/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/seu-usuario/finance-control?style=social)](https://github.com/seu-usuario/finance-control/network/members)
+[![GitHub stars](https://img.shields.io/github/stars/tlsilva89/finance-control?style=social)](https://github.com/tlsilva89/finance-control/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/tlsilva89/finance-control?style=social)](https://github.com/tlsilva89/finance-control/network/members)
 
-**Feito com ❤️ usando Vue.js e .NET**
+**Feito Vue.js e .NET**
 
 </div>
