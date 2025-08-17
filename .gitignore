@@ -93,10 +93,6 @@ backend/.vscode/launch.json
 # Rider
 backend/.idea/
 
-# ========================================
-# DATABASE
-# ========================================
-
 # SQLite databases
 *.db
 *.db-shm
