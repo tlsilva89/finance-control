@@ -16,22 +16,19 @@ services:
       - finance_data:/data
     networks:
       - finance-network
-    # Removido healthcheck temporariamente
 
   frontend:
     build: ./frontend
     container_name: finance-control-frontend
     restart: unless-stopped
     environment:
-      - VITE_API_URL=http://192.168.3.15:3001 # IP do TrueNAS
+      - VITE_API_URL=/api
     ports:
       - "8080:80"
     depends_on:
       - backend
     networks:
       - finance-network
-
-  # Removido nginx-proxy por enquanto para simplificar
 
 networks:
   finance-network:
@@ -40,7 +37,3 @@ networks:
 volumes:
   finance_data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /mnt/sua_pool/finance-data

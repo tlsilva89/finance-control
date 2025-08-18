@@ -1,9 +1,10 @@
-# frontend/Dockerfile
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production
 COPY . .
+# Copiar arquivo .env.production se existir
+COPY .env.production* ./
 RUN npm run build
 
 FROM nginx:alpine

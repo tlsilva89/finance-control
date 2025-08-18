@@ -45,7 +45,8 @@ builder.Services.AddCors(options =>
                 "http://localhost:5173", 
                 "http://localhost:3000",
                 "http://192.168.3.15:8080",
-                "http://truenas.lab.local:8080"
+                "http://truenas.lab.local:8080",
+                "http://localhost:8080" 
               )
               .AllowAnyHeader()
               .AllowAnyMethod()
