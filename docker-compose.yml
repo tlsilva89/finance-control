@@ -1,5 +1,4 @@
 version: "3.8"
-
 services:
   backend:
     build: ./backend
@@ -8,57 +7,40 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:3001
-      - ConnectionStrings__DefaultConnection=Data Source=/data/finance.db
-      - JWT_SECRET=SuaChaveSecretaAquiMuitoForte123!@#
+      - ConnectionStrings__Default=Data Source=/data/FinanceControl.db
+      - Jwt__Key=SuaChaveSecretaForte32CaracteresAqui123456789
+      - Jwt__Issuer=FinanceControl
+      - Jwt__Audience=FinanceControl
+      - Jwt__ExpirationSeconds=86400
     volumes:
       - finance_data:/data
     networks:
       - finance-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    # Removido healthcheck temporariamente
 
   frontend:
     build: ./frontend
     container_name: finance-control-frontend
     restart: unless-stopped
     environment:
-      - VITE_API_URL=http://finance.local.lan:3001
+      - VITE_API_URL=http://192.168.3.15:3001 # IP do TrueNAS
     ports:
       - "8080:80"
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     networks:
       - finance-network
 
-  nginx-proxy:
-    image: jc21/nginx-proxy-manager:latest
-    container_name: nginx-proxy-manager
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      - "81:81"
-    volumes:
-      - npm_data:/data
-      - npm_ssl:/etc/letsencrypt
-    networks:
-      - finance-network
+  # Removido nginx-proxy por enquanto para simplificar
 
 networks:
   finance-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/24
 
 volumes:
   finance_data:
     driver: local
-  npm_data:
-    driver: local
-  npm_ssl:
-    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/sua_pool/finance-data

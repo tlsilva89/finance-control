@@ -2,8 +2,7 @@ import axios from "axios";
 import { useAuthStore } from "../stores/auth";
 
 const api = axios.create({
-  baseURL:
-    import.meta.env.VITE_API_URL || "http://api.finance-control.local:3001",
+  baseURL: import.meta.env.VITE_API_URL || "http://192.168.3.15:3001",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",

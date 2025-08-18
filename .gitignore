@@ -177,7 +177,6 @@ tramp
 .env
 .env.local
 .env.development
-.env.production
 .env.test
 
 # Configuration files with secrets

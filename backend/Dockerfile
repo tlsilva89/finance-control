@@ -1,4 +1,3 @@
-# backend/Dockerfile
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE 3001
@@ -16,4 +15,8 @@ RUN dotnet publish -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "FinanceControl.dll"]
+
+# Criar diretório para dados
+RUN mkdir -p /data && chmod 755 /data
+
+ENTRYPOINT ["dotnet", "FinanceControl.Api.dll"] 
