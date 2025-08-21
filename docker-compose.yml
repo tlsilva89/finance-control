@@ -13,7 +13,7 @@ services:
       - Jwt__Audience=FinanceControl
       - Jwt__ExpirationSeconds=86400
     volumes:
-      - finance_data:/data
+      - /mnt/thiago-storage/database:/data
     networks:
       - finance-network
 
@@ -33,7 +33,3 @@ services:
 networks:
   finance-network:
     driver: bridge
-
-volumes:
-  finance_data:
-    driver: local

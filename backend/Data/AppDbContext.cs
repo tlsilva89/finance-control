@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<Income> Incomes { get; set; } = null!;
     public DbSet<CreditCard> CreditCards { get; set; } = null!;
+    public DbSet<CreditCardExpense> CreditCardExpenses { get; set; } = null!;
     public DbSet<Subscription> Subscriptions { get; set; } = null!;
     public DbSet<Service> Services { get; set; } = null!;
 
@@ -19,7 +20,6 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Configurações do User
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasIndex(e => e.Username).IsUnique();
@@ -30,7 +30,6 @@ public class AppDbContext : DbContext
             entity.Property(e => e.SecurityAnswerHash).IsRequired();
         });
 
-        // Configurações do Income
         modelBuilder.Entity<Income>(entity =>
         {
             entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
@@ -40,7 +39,6 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // Configurações do CreditCard
         modelBuilder.Entity<CreditCard>(entity =>
         {
             entity.Property(e => e.Limit).HasColumnType("decimal(18,2)");
@@ -49,9 +47,26 @@ public class AppDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(e => e.Expenses)
+                .WithOne(e => e.CreditCard)
+                .HasForeignKey(e => e.CreditCardId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // Configurações do Subscription
+        modelBuilder.Entity<CreditCardExpense>(entity =>
+        {
+            entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.InstallmentAmount).HasColumnType("decimal(18,2)");
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.CreditCard)
+                .WithMany(c => c.Expenses)
+                .HasForeignKey(e => e.CreditCardId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<Subscription>(entity =>
         {
             entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
@@ -61,7 +76,6 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // Configurações do Service
         modelBuilder.Entity<Service>(entity =>
         {
             entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");

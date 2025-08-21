@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Text.Json.Serialization;
 using FinanceControl.Api.Data;
 using FinanceControl.Api.Services;
 using FinanceControl.Api.Endpoints;
@@ -10,6 +11,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+});
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -29,7 +35,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
-
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 
@@ -41,7 +46,7 @@ builder.Services.AddCors(options =>
                 "http://localhost:5173",
                 "http://localhost:3000",
                 "http://192.168.3.15:8080",
-                "http://truenas.lab.local:8080",
+                "http://truenas.spark.local:8080",
                 "http://localhost:8080"
             )
             .AllowAnyHeader()
@@ -68,6 +73,7 @@ app.UseAuthorization();
 AuthEndpoints.Map(app);
 IncomeEndpoints.Map(app);
 CreditCardsEndpoints.Map(app);
+CreditCardExpensesEndpoints.Map(app);
 SubscriptionsEndpoints.Map(app);
 ServicesEndpoints.Map(app);
 

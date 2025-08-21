@@ -58,30 +58,7 @@
         </div>
       </div>
 
-      <div>
-        <label
-          for="currentDebt"
-          class="block text-sm font-medium text-gray-300 mb-2"
-        >
-          Dívida Atual (R$)
-        </label>
-        <div class="relative">
-          <span
-            class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-            >R$</span
-          >
-          <input
-            id="currentDebt"
-            v-model="form.currentDebt"
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="0,00"
-            class="bg-dark-800 border border-dark-700 text-gray-100 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 w-full pl-10"
-            required
-          />
-        </div>
-      </div>
+      <!-- CAMPO REMOVIDO: Dívida Atual - será calculada automaticamente -->
 
       <div>
         <label
@@ -90,16 +67,30 @@
         >
           Dia do Vencimento
         </label>
-        <input
+        <select
           id="dueDate"
           v-model="form.dueDate"
-          type="number"
-          min="1"
-          max="31"
-          placeholder="Ex: 15"
           class="bg-dark-800 border border-dark-700 text-gray-100 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 w-full"
           required
-        />
+        >
+          <option v-for="day in 31" :key="day" :value="day">{{ day }}</option>
+        </select>
+      </div>
+
+      <!-- Informação sobre dívida automática -->
+      <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
+        <div class="flex items-start space-x-2">
+          <InformationCircleIcon
+            class="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0"
+          />
+          <div>
+            <p class="text-sm font-medium text-blue-100">Dívida Automática</p>
+            <p class="text-xs text-blue-200 mt-1">
+              A dívida atual será calculada automaticamente conforme você
+              adiciona os gastos do cartão.
+            </p>
+          </div>
+        </div>
       </div>
 
       <!-- Buttons -->
@@ -129,14 +120,17 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch } from "vue";
-import { CreditCardIcon, XMarkIcon } from "@heroicons/vue/24/outline";
+import {
+  CreditCardIcon,
+  XMarkIcon,
+  InformationCircleIcon,
+} from "@heroicons/vue/24/outline";
 import SimpleModal from "./SimpleModal.vue";
 
 interface CreditCard {
   id?: string;
   name: string;
   limit: number;
-  currentDebt: number;
   dueDate: number;
 }
 
@@ -158,14 +152,12 @@ const isEditing = ref(false);
 const form = reactive({
   name: "",
   limit: 0,
-  currentDebt: 0,
   dueDate: 1,
 });
 
 const resetForm = () => {
   form.name = "";
   form.limit = 0;
-  form.currentDebt = 0;
   form.dueDate = 1;
   isEditing.value = false;
 };
@@ -177,7 +169,6 @@ const handleSubmit = async () => {
     const creditCardData = {
       ...form,
       limit: Number(form.limit),
-      currentDebt: Number(form.currentDebt),
       dueDate: Number(form.dueDate),
     };
 
@@ -201,7 +192,6 @@ watch(
       // Editando
       form.name = props.creditCard.name;
       form.limit = props.creditCard.limit;
-      form.currentDebt = props.creditCard.currentDebt;
       form.dueDate = props.creditCard.dueDate;
       isEditing.value = true;
     } else if (newValue) {

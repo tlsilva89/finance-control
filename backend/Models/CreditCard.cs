@@ -21,11 +21,13 @@ public class CreditCard
     public int DueDate { get; set; }
     
     [Required]
-    [StringLength(7)] // YYYY-MM
+    [StringLength(7)]
     public string MonthReference { get; set; } = string.Empty;
     
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
     public Guid UserId { get; set; }
     public User User { get; set; } = null!;
+    
+    public ICollection<CreditCardExpense> Expenses { get; set; } = new List<CreditCardExpense>();
 }
