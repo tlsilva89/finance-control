@@ -169,7 +169,7 @@
               <div class="flex items-center space-x-4">
                 <div
                   class="w-12 h-12 rounded-full flex items-center justify-center"
-                  :class="getCardColor(card.currentDebt, card.limit)"
+                  :class="getCardColor(card.totalConsumption, card.limit)"
                 >
                   <CreditCardIcon class="w-6 h-6 text-white" />
                 </div>
@@ -183,11 +183,11 @@
                       <div
                         class="h-2 rounded-full transition-all duration-300"
                         :class="
-                          getProgressBarColor(card.currentDebt, card.limit)
+                          getProgressBarColor(card.totalConsumption, card.limit)
                         "
                         :style="{
                           width: `${getUsagePercentage(
-                            card.currentDebt,
+                            card.totalConsumption,
                             card.limit
                           )}%`,
                         }"
@@ -196,7 +196,7 @@
                     <span class="text-xs text-gray-400"
                       >{{
                         getUsagePercentage(
-                          card.currentDebt,
+                          card.totalConsumption,
                           card.limit
                         ).toFixed(1)
                       }}%</span
@@ -388,19 +388,19 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 
-const getUsagePercentage = (debt: number, limit: number) => {
-  return limit > 0 ? (debt / limit) * 100 : 0;
+const getUsagePercentage = (totalConsumption: number, limit: number) => {
+  return limit > 0 ? (totalConsumption / limit) * 100 : 0;
 };
 
-const getCardColor = (debt: number, limit: number) => {
-  const percentage = getUsagePercentage(debt, limit);
+const getCardColor = (totalConsumption: number, limit: number) => {
+  const percentage = getUsagePercentage(totalConsumption, limit);
   if (percentage >= 80) return "bg-red-600";
   if (percentage >= 60) return "bg-yellow-600";
   return "bg-blue-600";
 };
 
-const getProgressBarColor = (debt: number, limit: number) => {
-  const percentage = getUsagePercentage(debt, limit);
+const getProgressBarColor = (totalConsumption: number, limit: number) => {
+  const percentage = getUsagePercentage(totalConsumption, limit);
   if (percentage >= 80) return "bg-red-500";
   if (percentage >= 60) return "bg-yellow-500";
   return "bg-blue-500";
@@ -460,6 +460,7 @@ const handleCardSubmit = async (creditCardData: any) => {
 const handleExpenseSubmit = async (expenseData: any) => {
   try {
     expensesLoading.value = true;
+
     await financeStore.addExpenseWithInstallments({
       description: expenseData.description,
       amount: expenseData.totalAmount,
@@ -469,8 +470,12 @@ const handleExpenseSubmit = async (expenseData: any) => {
       category: expenseData.category,
       creditCardId: expenseData.creditCardId,
     });
-    await loadCardExpenses(expenseData.creditCardId);
-    await financeStore.fetchCreditCards();
+
+    await Promise.all([
+      loadCardExpenses(expenseData.creditCardId),
+      financeStore.fetchCreditCards(),
+    ]);
+
     closeExpenseModal();
   } catch (err) {
     console.error("Erro ao salvar gasto:", err);
@@ -482,9 +487,14 @@ const handleExpenseSubmit = async (expenseData: any) => {
 const handleExistingExpenseSubmit = async (expenseData: any) => {
   try {
     expensesLoading.value = true;
+
     await financeStore.addExistingExpenseWithInstallments(expenseData);
-    await loadCardExpenses(expenseData.creditCardId);
-    await financeStore.fetchCreditCards();
+
+    await Promise.all([
+      loadCardExpenses(expenseData.creditCardId),
+      financeStore.fetchCreditCards(),
+    ]);
+
     closeExistingExpenseModal();
   } catch (err) {
     console.error("Erro ao salvar compra existente:", err);
@@ -527,8 +537,12 @@ const handleDeleteExpense = async () => {
     try {
       expensesLoading.value = true;
       await financeStore.deleteExpense(expenseToDelete.value.id);
-      await loadCardExpenses(expenseToDelete.value.creditCardId);
-      await financeStore.fetchCreditCards();
+
+      await Promise.all([
+        loadCardExpenses(expenseToDelete.value.creditCardId),
+        financeStore.fetchCreditCards(),
+      ]);
+
       deleteExpenseModalOpen.value = false;
       expenseToDelete.value = null;
     } catch (err) {
@@ -543,8 +557,11 @@ const toggleExpensePaid = async (expense: CreditCardExpense) => {
   try {
     expensesLoading.value = true;
     await financeStore.toggleExpensePaid(expense.id);
-    await loadCardExpenses(expense.creditCardId);
-    await financeStore.fetchCreditCards();
+
+    await Promise.all([
+      loadCardExpenses(expense.creditCardId),
+      financeStore.fetchCreditCards(),
+    ]);
   } catch (err) {
     console.error("Erro ao atualizar status do gasto:", err);
   } finally {

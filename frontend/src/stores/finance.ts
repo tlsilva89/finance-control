@@ -17,6 +17,7 @@ export interface CreditCard {
   name: string;
   limit: number;
   currentDebt: number;
+  totalConsumption: number;
   dueDate: number;
   monthReference: string;
   createdAt: string;
@@ -117,10 +118,18 @@ export const useFinanceStore = defineStore("finance", {
     },
 
     totalCreditCardLimit(): number {
-      return this.currentMonthCreditCards.reduce(
-        (sum, card) => sum + card.limit,
+      return this.creditCards.reduce((sum, card) => sum + card.limit, 0);
+    },
+
+    totalCreditCardConsumption(): number {
+      return this.creditCards.reduce(
+        (sum, card) => sum + (card.totalConsumption || 0),
         0
       );
+    },
+
+    availableCreditLimit(): number {
+      return this.totalCreditCardLimit - this.totalCreditCardConsumption;
     },
 
     totalSubscriptions(): number {
@@ -143,10 +152,6 @@ export const useFinanceStore = defineStore("finance", {
 
     balance(): number {
       return this.totalIncome - this.monthlyExpenses - this.totalCreditCardDebt;
-    },
-
-    availableCreditLimit(): number {
-      return this.totalCreditCardLimit - this.totalCreditCardDebt;
     },
   },
 
@@ -171,17 +176,14 @@ export const useFinanceStore = defineStore("finance", {
       const month = monthReference || dateStore.monthYearString;
       this.loading = true;
       try {
-        console.log("Buscando entradas para o mês:", month);
         const response = await api.get(`/api/incomes?monthReference=${month}`);
         this.incomes = this.incomes.filter(
           (income) => income.monthReference !== month
         );
         this.incomes.push(...response.data);
-        console.log("Entradas carregadas:", response.data);
-      } catch (error) {
-        console.error("Erro ao buscar entradas:", error);
+      } catch (error: any) {
         const { error: showError } = useNotification();
-        showError("Erro ao carregar entradas");
+        showError(error?.message || "Erro ao carregar entradas");
       } finally {
         this.loading = false;
       }
@@ -193,7 +195,6 @@ export const useFinanceStore = defineStore("finance", {
       const { success, error } = useNotification();
       const dateStore = useDateReferenceStore();
       try {
-        console.log("Adicionando entrada:", income);
         const incomeWithMonth = {
           ...income,
           monthReference: dateStore.monthYearString,
@@ -201,9 +202,7 @@ export const useFinanceStore = defineStore("finance", {
         const response = await api.post("/api/incomes", incomeWithMonth);
         this.incomes.unshift(response.data);
         success("Entrada adicionada com sucesso!");
-        console.log("Entrada adicionada:", response.data);
       } catch (err: any) {
-        console.error("Erro ao adicionar entrada:", err);
         error("Erro ao adicionar entrada");
         throw err;
       }
@@ -212,16 +211,13 @@ export const useFinanceStore = defineStore("finance", {
     async updateIncome(id: string, income: Partial<Income>) {
       const { success, error } = useNotification();
       try {
-        console.log("Atualizando entrada:", id, income);
         const response = await api.put(`/api/incomes/${id}`, income);
         const index = this.incomes.findIndex((i) => i.id === id);
         if (index !== -1) {
           this.incomes[index] = response.data;
         }
         success("Entrada atualizada com sucesso!");
-        console.log("Entrada atualizada:", response.data);
       } catch (err: any) {
-        console.error("Erro ao atualizar entrada:", err);
         error("Erro ao atualizar entrada");
         throw err;
       }
@@ -230,13 +226,10 @@ export const useFinanceStore = defineStore("finance", {
     async deleteIncome(id: string) {
       const { success, error } = useNotification();
       try {
-        console.log("Deletando entrada:", id);
         await api.delete(`/api/incomes/${id}`);
         this.incomes = this.incomes.filter((i) => i.id !== id);
         success("Entrada removida com sucesso!");
-        console.log("Entrada removida:", id);
       } catch (err: any) {
-        console.error("Erro ao remover entrada:", err);
         error("Erro ao remover entrada");
         throw err;
       }
@@ -247,41 +240,36 @@ export const useFinanceStore = defineStore("finance", {
       const month = monthReference || dateStore.monthYearString;
       this.loading = true;
       try {
-        console.log("Buscando cartões para o mês:", month);
         const response = await api.get(
           `/api/credit-cards?monthReference=${month}`
         );
-        this.creditCards = this.creditCards.filter(
-          (card) => card.monthReference !== month
-        );
-        this.creditCards.push(...response.data);
-        console.log("Cartões carregados:", response.data);
-      } catch (error) {
-        console.error("Erro ao buscar cartões:", error);
+        const incoming = response.data;
+        this.creditCards = [
+          ...this.creditCards.filter(
+            (cc) => !incoming.some((inc: CreditCard) => inc.id === cc.id)
+          ),
+          ...incoming,
+        ];
+      } catch (error: any) {
         const { error: showError } = useNotification();
-        showError("Erro ao carregar cartões");
+        showError(error?.message || "Erro ao carregar cartões");
       } finally {
         this.loading = false;
       }
     },
 
     async addCreditCard(
-      creditCard: Omit<CreditCard, "id" | "createdAt" | "monthReference">
+      creditCard: Omit<
+        CreditCard,
+        "id" | "createdAt" | "currentDebt" | "totalConsumption"
+      >
     ) {
       const { success, error } = useNotification();
-      const dateStore = useDateReferenceStore();
       try {
-        console.log("Adicionando cartão:", creditCard);
-        const cardWithMonth = {
-          ...creditCard,
-          monthReference: dateStore.monthYearString,
-        };
-        const response = await api.post("/api/credit-cards", cardWithMonth);
+        const response = await api.post("/api/credit-cards", creditCard);
         this.creditCards.unshift(response.data);
         success("Cartão adicionado com sucesso!");
-        console.log("Cartão adicionado:", response.data);
       } catch (err: any) {
-        console.error("Erro ao adicionar cartão:", err);
         error("Erro ao adicionar cartão");
         throw err;
       }
@@ -290,16 +278,13 @@ export const useFinanceStore = defineStore("finance", {
     async updateCreditCard(id: string, creditCard: Partial<CreditCard>) {
       const { success, error } = useNotification();
       try {
-        console.log("Atualizando cartão:", id, creditCard);
         const response = await api.put(`/api/credit-cards/${id}`, creditCard);
         const index = this.creditCards.findIndex((c) => c.id === id);
         if (index !== -1) {
           this.creditCards[index] = response.data;
         }
         success("Cartão atualizado com sucesso!");
-        console.log("Cartão atualizado:", response.data);
       } catch (err: any) {
-        console.error("Erro ao atualizar cartão:", err);
         error("Erro ao atualizar cartão");
         throw err;
       }
@@ -308,13 +293,10 @@ export const useFinanceStore = defineStore("finance", {
     async deleteCreditCard(id: string) {
       const { success, error } = useNotification();
       try {
-        console.log("Deletando cartão:", id);
         await api.delete(`/api/credit-cards/${id}`);
         this.creditCards = this.creditCards.filter((c) => c.id !== id);
         success("Cartão removido com sucesso!");
-        console.log("Cartão removido:", id);
       } catch (err: any) {
-        console.error("Erro ao remover cartão:", err);
         error("Erro ao remover cartão");
         throw err;
       }
@@ -324,19 +306,14 @@ export const useFinanceStore = defineStore("finance", {
       cardId: string,
       monthReference?: string
     ): Promise<CreditCardExpense[]> {
-      try {
-        const params = new URLSearchParams();
-        if (monthReference) {
-          params.append("monthReference", monthReference);
-        }
-        const response = await api.get(
-          `/api/credit-card-expenses/card/${cardId}?${params.toString()}`
-        );
-        return response.data;
-      } catch (error) {
-        console.error("Erro ao buscar gastos do cartão:", error);
-        throw error;
+      const params = new URLSearchParams();
+      if (monthReference) {
+        params.append("monthReference", monthReference);
       }
+      const response = await api.get(
+        `/api/credit-card-expenses/card/${cardId}?${params.toString()}`
+      );
+      return response.data;
     },
 
     async addExpense(
@@ -345,13 +322,8 @@ export const useFinanceStore = defineStore("finance", {
         "id" | "createdAt" | "installmentAmount" | "currentInstallment"
       >
     ) {
-      try {
-        const response = await api.post("/api/credit-card-expenses", expense);
-        return response.data;
-      } catch (error) {
-        console.error("Erro ao adicionar gasto:", error);
-        throw error;
-      }
+      const response = await api.post("/api/credit-card-expenses", expense);
+      return response.data;
     },
 
     async addExpenseWithInstallments(expense: {
@@ -374,7 +346,6 @@ export const useFinanceStore = defineStore("finance", {
         );
         return response.data;
       } catch (err: any) {
-        console.error("Erro ao adicionar gastos parcelados:", err);
         error("Erro ao adicionar gastos parcelados");
         throw err;
       }
@@ -403,42 +374,26 @@ export const useFinanceStore = defineStore("finance", {
         );
         return response.data;
       } catch (err: any) {
-        console.error("Erro ao adicionar compra existente:", err);
         error("Erro ao adicionar compra existente");
         throw err;
       }
     },
 
     async updateExpense(id: string, expense: Partial<CreditCardExpense>) {
-      try {
-        const response = await api.put(
-          `/api/credit-card-expenses/${id}`,
-          expense
-        );
-        return response.data;
-      } catch (error) {
-        console.error("Erro ao atualizar gasto:", error);
-        throw error;
-      }
+      const response = await api.put(
+        `/api/credit-card-expenses/${id}`,
+        expense
+      );
+      return response.data;
     },
 
     async deleteExpense(id: string) {
-      try {
-        await api.delete(`/api/credit-card-expenses/${id}`);
-      } catch (error) {
-        console.error("Erro ao deletar gasto:", error);
-        throw error;
-      }
+      await api.delete(`/api/credit-card-expenses/${id}`);
     },
 
     async toggleExpensePaid(id: string) {
-      try {
-        const response = await api.patch(`/api/credit-card-expenses/${id}/pay`);
-        return response.data;
-      } catch (error) {
-        console.error("Erro ao alterar status do gasto:", error);
-        throw error;
-      }
+      const response = await api.patch(`/api/credit-card-expenses/${id}/pay`);
+      return response.data;
     },
 
     async fetchSubscriptions(monthReference?: string) {
@@ -446,7 +401,6 @@ export const useFinanceStore = defineStore("finance", {
       const month = monthReference || dateStore.monthYearString;
       this.loading = true;
       try {
-        console.log("Buscando assinaturas para o mês:", month);
         const response = await api.get(
           `/api/subscriptions?monthReference=${month}`
         );
@@ -454,11 +408,9 @@ export const useFinanceStore = defineStore("finance", {
           (sub) => sub.monthReference !== month
         );
         this.subscriptions.push(...response.data);
-        console.log("Assinaturas carregadas:", response.data);
-      } catch (error) {
-        console.error("Erro ao buscar assinaturas:", error);
+      } catch (error: any) {
         const { error: showError } = useNotification();
-        showError("Erro ao carregar assinaturas");
+        showError(error?.message || "Erro ao carregar assinaturas");
       } finally {
         this.loading = false;
       }
@@ -470,7 +422,6 @@ export const useFinanceStore = defineStore("finance", {
       const { success, error } = useNotification();
       const dateStore = useDateReferenceStore();
       try {
-        console.log("Adicionando assinatura:", subscription);
         const subWithMonth = {
           ...subscription,
           monthReference: dateStore.monthYearString,
@@ -478,9 +429,7 @@ export const useFinanceStore = defineStore("finance", {
         const response = await api.post("/api/subscriptions", subWithMonth);
         this.subscriptions.unshift(response.data);
         success("Assinatura adicionada com sucesso!");
-        console.log("Assinatura adicionada:", response.data);
       } catch (err: any) {
-        console.error("Erro ao adicionar assinatura:", err);
         error("Erro ao adicionar assinatura");
         throw err;
       }
@@ -489,7 +438,6 @@ export const useFinanceStore = defineStore("finance", {
     async updateSubscription(id: string, subscription: Partial<Subscription>) {
       const { success, error } = useNotification();
       try {
-        console.log("Atualizando assinatura:", id, subscription);
         const response = await api.put(
           `/api/subscriptions/${id}`,
           subscription
@@ -499,9 +447,7 @@ export const useFinanceStore = defineStore("finance", {
           this.subscriptions[index] = response.data;
         }
         success("Assinatura atualizada com sucesso!");
-        console.log("Assinatura atualizada:", response.data);
       } catch (err: any) {
-        console.error("Erro ao atualizar assinatura:", err);
         error("Erro ao atualizar assinatura");
         throw err;
       }
@@ -510,13 +456,10 @@ export const useFinanceStore = defineStore("finance", {
     async deleteSubscription(id: string) {
       const { success, error } = useNotification();
       try {
-        console.log("Deletando assinatura:", id);
         await api.delete(`/api/subscriptions/${id}`);
         this.subscriptions = this.subscriptions.filter((s) => s.id !== id);
         success("Assinatura removida com sucesso!");
-        console.log("Assinatura removida:", id);
       } catch (err: any) {
-        console.error("Erro ao remover assinatura:", err);
         error("Erro ao remover assinatura");
         throw err;
       }
@@ -527,17 +470,14 @@ export const useFinanceStore = defineStore("finance", {
       const month = monthReference || dateStore.monthYearString;
       this.loading = true;
       try {
-        console.log("Buscando serviços para o mês:", month);
         const response = await api.get(`/api/services?monthReference=${month}`);
         this.services = this.services.filter(
           (service) => service.monthReference !== month
         );
         this.services.push(...response.data);
-        console.log("Serviços carregados:", response.data);
-      } catch (error) {
-        console.error("Erro ao buscar serviços:", error);
+      } catch (error: any) {
         const { error: showError } = useNotification();
-        showError("Erro ao carregar serviços");
+        showError(error?.message || "Erro ao carregar serviços");
       } finally {
         this.loading = false;
       }
@@ -549,7 +489,6 @@ export const useFinanceStore = defineStore("finance", {
       const { success, error } = useNotification();
       const dateStore = useDateReferenceStore();
       try {
-        console.log("Adicionando serviço:", service);
         const serviceWithMonth = {
           ...service,
           monthReference: dateStore.monthYearString,
@@ -557,9 +496,7 @@ export const useFinanceStore = defineStore("finance", {
         const response = await api.post("/api/services", serviceWithMonth);
         this.services.unshift(response.data);
         success("Serviço adicionado com sucesso!");
-        console.log("Serviço adicionado:", response.data);
       } catch (err: any) {
-        console.error("Erro ao adicionar serviço:", err);
         error("Erro ao adicionar serviço");
         throw err;
       }
@@ -568,16 +505,13 @@ export const useFinanceStore = defineStore("finance", {
     async updateService(id: string, service: Partial<Service>) {
       const { success, error } = useNotification();
       try {
-        console.log("Atualizando serviço:", id, service);
         const response = await api.put(`/api/services/${id}`, service);
         const index = this.services.findIndex((s) => s.id === id);
         if (index !== -1) {
           this.services[index] = response.data;
         }
         success("Serviço atualizado com sucesso!");
-        console.log("Serviço atualizado:", response.data);
       } catch (err: any) {
-        console.error("Erro ao atualizar serviço:", err);
         error("Erro ao atualizar serviço");
         throw err;
       }
@@ -586,13 +520,10 @@ export const useFinanceStore = defineStore("finance", {
     async deleteService(id: string) {
       const { success, error } = useNotification();
       try {
-        console.log("Deletando serviço:", id);
         await api.delete(`/api/services/${id}`);
         this.services = this.services.filter((s) => s.id !== id);
         success("Serviço removido com sucesso!");
-        console.log("Serviço removido:", id);
       } catch (err: any) {
-        console.error("Erro ao remover serviço:", err);
         error("Erro ao remover serviço");
         throw err;
       }

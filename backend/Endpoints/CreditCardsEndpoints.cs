@@ -29,33 +29,55 @@ public static class CreditCardsEndpoints
         try
         {
             var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var query = context.CreditCards
-                .Include(c => c.Expenses)
-                .Where(c => c.UserId == userId);
 
-            if (!string.IsNullOrEmpty(monthReference))
+            var creditCards = await context.CreditCards
+                .Where(c => c.UserId == userId)
+                .OrderBy(c => c.Name)
+                .ToListAsync();
+
+            DateTime startDate, endDate;
+            if (!string.IsNullOrEmpty(monthReference) &&
+                DateTime.TryParseExact(monthReference, "yyyy-MM", null, System.Globalization.DateTimeStyles.None, out var date))
             {
-                query = query.Where(c => c.MonthReference == monthReference);
+                startDate = new DateTime(date.Year, date.Month, 1);
+                endDate = startDate.AddMonths(1).AddDays(-1);
             }
-
-            var creditCards = await query.OrderBy(c => c.Name).ToListAsync();
+            else
+            {
+                var now = DateTime.Now;
+                startDate = new DateTime(now.Year, now.Month, 1);
+                endDate = startDate.AddMonths(1).AddDays(-1);
+            }
 
             foreach (var card in creditCards)
             {
-                if (!string.IsNullOrEmpty(monthReference))
-                {
-                    if (DateTime.TryParseExact(monthReference, "yyyy-MM", null, System.Globalization.DateTimeStyles.None, out var date))
-                    {
-                        var startDate = new DateTime(date.Year, date.Month, 1);
-                        var endDate = startDate.AddMonths(1).AddDays(-1);
-                        
-                        var monthExpenses = card.Expenses
-                            .Where(e => e.PurchaseDate >= startDate && e.PurchaseDate <= endDate && !e.IsPaid)
-                            .Sum(e => e.InstallmentAmount);
-                        
-                        card.CurrentDebt = monthExpenses;
-                    }
-                }
+                var monthDebt = await context.CreditCardExpenses
+                    .Where(e => e.CreditCardId == card.Id &&
+                        e.PurchaseDate >= startDate &&
+                        e.PurchaseDate <= endDate &&
+                        !e.IsPaid)
+                    .SumAsync(e => e.InstallmentAmount);
+
+                var futureExpenses = await context.CreditCardExpenses
+                    .Where(e => e.CreditCardId == card.Id &&
+                                !e.IsPaid &&
+                                e.PurchaseDate >= startDate)
+                    .GroupBy(e => new { e.Description, e.Amount, e.Installments })
+                    .Select(g => g.Sum(e => e.InstallmentAmount))
+                    .ToListAsync();
+
+                var totalConsumption = futureExpenses.Sum();
+
+                card.CurrentDebt = monthDebt;
+                card.TotalConsumption = totalConsumption;
+            }
+
+            if (!string.IsNullOrEmpty(monthReference))
+            {
+                creditCards = creditCards.Where(c =>
+                    c.CurrentDebt > 0 ||
+                    c.MonthReference == monthReference
+                ).ToList();
             }
 
             return Results.Ok(creditCards);
@@ -74,15 +96,37 @@ public static class CreditCardsEndpoints
         try
         {
             var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            
             var creditCard = await context.CreditCards
-                .Include(c => c.Expenses)
                 .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
 
             if (creditCard == null)
             {
                 return Results.NotFound(new { error = "Cartão não encontrado" });
             }
+
+            var now = DateTime.Now;
+            var startDate = new DateTime(now.Year, now.Month, 1);
+            var endDate = startDate.AddMonths(1).AddDays(-1);
+
+            var totalDebt = await context.CreditCardExpenses
+                .Where(e => e.CreditCardId == id &&
+                            e.PurchaseDate >= startDate &&
+                            e.PurchaseDate <= endDate &&
+                            !e.IsPaid)
+                .SumAsync(e => e.InstallmentAmount);
+
+            var futureExpenses = await context.CreditCardExpenses
+                .Where(e => e.CreditCardId == id &&
+                            !e.IsPaid &&
+                            e.PurchaseDate >= startDate)
+                .GroupBy(e => new { e.Description, e.Amount, e.Installments })
+                .Select(g => g.Sum(e => e.InstallmentAmount))
+                .ToListAsync();
+
+            var totalConsumption = futureExpenses.Sum();
+
+            creditCard.CurrentDebt = totalDebt;
+            creditCard.TotalConsumption = totalConsumption;
 
             return Results.Ok(creditCard);
         }
@@ -103,6 +147,12 @@ public static class CreditCardsEndpoints
             creditCard.Id = Guid.NewGuid();
             creditCard.UserId = userId;
             creditCard.CreatedAt = DateTime.UtcNow;
+            creditCard.CurrentDebt = 0;
+
+            if (string.IsNullOrEmpty(creditCard.MonthReference))
+            {
+                creditCard.MonthReference = DateTime.Now.ToString("yyyy-MM");
+            }
 
             context.CreditCards.Add(creditCard);
             await context.SaveChangesAsync();
@@ -138,6 +188,30 @@ public static class CreditCardsEndpoints
             creditCard.MonthReference = updatedCreditCard.MonthReference;
 
             await context.SaveChangesAsync();
+
+            var now = DateTime.Now;
+            var startDate = new DateTime(now.Year, now.Month, 1);
+            var endDate = startDate.AddMonths(1).AddDays(-1);
+
+            var totalDebt = await context.CreditCardExpenses
+                .Where(e => e.CreditCardId == id &&
+                            e.PurchaseDate >= startDate &&
+                            e.PurchaseDate <= endDate &&
+                            !e.IsPaid)
+                .SumAsync(e => e.InstallmentAmount);
+
+            var futureExpenses = await context.CreditCardExpenses
+                .Where(e => e.CreditCardId == id &&
+                            !e.IsPaid &&
+                            e.PurchaseDate >= startDate)
+                .GroupBy(e => new { e.Description, e.Amount, e.Installments })
+                .Select(g => g.Sum(e => e.InstallmentAmount))
+                .ToListAsync();
+
+            var totalConsumption = futureExpenses.Sum();
+
+            creditCard.CurrentDebt = totalDebt;
+            creditCard.TotalConsumption = totalConsumption;
 
             return Results.Ok(creditCard);
         }

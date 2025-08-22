@@ -34,9 +34,8 @@ public static class CreditCardExpensesEndpoints
         try
         {
             var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            
+
             var query = context.CreditCardExpenses
-                .Include(e => e.CreditCard)
                 .Where(e => e.UserId == userId);
 
             if (!string.IsNullOrEmpty(monthReference))
@@ -66,9 +65,9 @@ public static class CreditCardExpensesEndpoints
 
             return Results.Ok(expenses);
         }
-        catch
+        catch (Exception ex)
         {
-            return Results.BadRequest(new { error = "Erro ao buscar gastos" });
+            return Results.BadRequest(new { error = "Erro ao buscar gastos", details = ex.Message });
         }
     }
 
@@ -81,9 +80,8 @@ public static class CreditCardExpensesEndpoints
         try
         {
             var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            
+
             var query = context.CreditCardExpenses
-                .Include(e => e.CreditCard)
                 .Where(e => e.UserId == userId && e.CreditCardId == cardId);
 
             if (!string.IsNullOrEmpty(monthReference))
@@ -103,9 +101,9 @@ public static class CreditCardExpensesEndpoints
 
             return Results.Ok(expenses);
         }
-        catch
+        catch (Exception ex)
         {
-            return Results.BadRequest(new { error = "Erro ao buscar gastos do cartão" });
+            return Results.BadRequest(new { error = "Erro ao buscar gastos do cartão", details = ex.Message });
         }
     }
 
@@ -117,7 +115,7 @@ public static class CreditCardExpensesEndpoints
         try
         {
             var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            
+
             var creditCard = await context.CreditCards
                 .FirstOrDefaultAsync(c => c.Id == expense.CreditCardId && c.UserId == userId);
 
@@ -129,12 +127,12 @@ public static class CreditCardExpensesEndpoints
             expense.Id = Guid.NewGuid();
             expense.UserId = userId;
             expense.CreatedAt = DateTime.UtcNow;
-            
+
             if (expense.CurrentInstallment <= 0)
             {
                 expense.CurrentInstallment = 1;
             }
-            
+
             if (expense.Installments > 1)
             {
                 expense.InstallmentAmount = Math.Round(expense.Amount / expense.Installments, 2);
@@ -146,16 +144,13 @@ public static class CreditCardExpensesEndpoints
             }
 
             context.CreditCardExpenses.Add(expense);
-            
-            creditCard.CurrentDebt += expense.InstallmentAmount;
-            
             await context.SaveChangesAsync();
 
             return Results.Created($"/api/credit-card-expenses/{expense.Id}", expense);
         }
-        catch
+        catch (Exception ex)
         {
-            return Results.BadRequest(new { error = "Erro ao criar gasto" });
+            return Results.BadRequest(new { error = "Erro ao criar gasto", details = ex.Message });
         }
     }
 
@@ -167,7 +162,7 @@ public static class CreditCardExpensesEndpoints
         try
         {
             var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            
+
             var creditCard = await context.CreditCards
                 .FirstOrDefaultAsync(c => c.Id == request.CreditCardId && c.UserId == userId);
 
@@ -182,7 +177,7 @@ public static class CreditCardExpensesEndpoints
             for (int i = 1; i <= request.Installments; i++)
             {
                 var installmentDate = baseDate.AddMonths(i - 1);
-                
+
                 var expense = new CreditCardExpense
                 {
                     Id = Guid.NewGuid(),
@@ -207,9 +202,9 @@ public static class CreditCardExpensesEndpoints
 
             return Results.Created("/api/credit-card-expenses/with-installments", expenses);
         }
-        catch
+        catch (Exception ex)
         {
-            return Results.BadRequest(new { error = "Erro ao criar gastos parcelados" });
+            return Results.BadRequest(new { error = "Erro ao criar gastos parcelados", details = ex.Message });
         }
     }
 
@@ -221,7 +216,7 @@ public static class CreditCardExpensesEndpoints
         try
         {
             var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            
+
             var creditCard = await context.CreditCards
                 .FirstOrDefaultAsync(c => c.Id == request.CreditCardId && c.UserId == userId);
 
@@ -236,7 +231,7 @@ public static class CreditCardExpensesEndpoints
             for (int i = request.CurrentInstallment; i <= request.TotalInstallments; i++)
             {
                 var installmentDate = originalDate.AddMonths(i - 1);
-                
+
                 var expense = new CreditCardExpense
                 {
                     Id = Guid.NewGuid(),
@@ -261,9 +256,9 @@ public static class CreditCardExpensesEndpoints
 
             return Results.Created("/api/credit-card-expenses/existing-with-installments", expenses);
         }
-        catch
+        catch (Exception ex)
         {
-            return Results.BadRequest(new { error = "Erro ao criar compra existente parcelada" });
+            return Results.BadRequest(new { error = "Erro ao criar compra existente parcelada", details = ex.Message });
         }
     }
 
@@ -276,9 +271,8 @@ public static class CreditCardExpensesEndpoints
         try
         {
             var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            
+
             var expense = await context.CreditCardExpenses
-                .Include(e => e.CreditCard)
                 .FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId);
 
             if (expense == null)
@@ -286,15 +280,13 @@ public static class CreditCardExpensesEndpoints
                 return Results.NotFound(new { error = "Gasto não encontrado" });
             }
 
-            var oldInstallmentAmount = expense.InstallmentAmount;
-
             expense.Description = updatedExpense.Description;
             expense.Amount = updatedExpense.Amount;
             expense.PurchaseDate = updatedExpense.PurchaseDate;
             expense.Installments = updatedExpense.Installments;
             expense.CurrentInstallment = updatedExpense.CurrentInstallment;
             expense.Category = updatedExpense.Category;
-            
+
             if (expense.Installments > 1)
             {
                 expense.InstallmentAmount = Math.Round(expense.Amount / expense.Installments, 2);
@@ -305,15 +297,13 @@ public static class CreditCardExpensesEndpoints
                 expense.CurrentInstallment = 1;
             }
 
-            expense.CreditCard.CurrentDebt = expense.CreditCard.CurrentDebt - oldInstallmentAmount + expense.InstallmentAmount;
-
             await context.SaveChangesAsync();
 
             return Results.Ok(expense);
         }
-        catch
+        catch (Exception ex)
         {
-            return Results.BadRequest(new { error = "Erro ao atualizar gasto" });
+            return Results.BadRequest(new { error = "Erro ao atualizar gasto", details = ex.Message });
         }
     }
 
@@ -325,9 +315,8 @@ public static class CreditCardExpensesEndpoints
         try
         {
             var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            
+
             var expense = await context.CreditCardExpenses
-                .Include(e => e.CreditCard)
                 .FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId);
 
             if (expense == null)
@@ -335,16 +324,14 @@ public static class CreditCardExpensesEndpoints
                 return Results.NotFound(new { error = "Gasto não encontrado" });
             }
 
-            expense.CreditCard.CurrentDebt -= expense.InstallmentAmount;
-
             context.CreditCardExpenses.Remove(expense);
             await context.SaveChangesAsync();
 
             return Results.Ok(new { message = "Gasto removido com sucesso" });
         }
-        catch
+        catch (Exception ex)
         {
-            return Results.BadRequest(new { error = "Erro ao remover gasto" });
+            return Results.BadRequest(new { error = "Erro ao remover gasto", details = ex.Message });
         }
     }
 
@@ -356,9 +343,8 @@ public static class CreditCardExpensesEndpoints
         try
         {
             var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            
+
             var expense = await context.CreditCardExpenses
-                .Include(e => e.CreditCard)
                 .FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId);
 
             if (expense == null)
@@ -367,23 +353,13 @@ public static class CreditCardExpensesEndpoints
             }
 
             expense.IsPaid = !expense.IsPaid;
-            
-            if (!expense.IsPaid)
-            {
-                expense.CreditCard.CurrentDebt += expense.InstallmentAmount;
-            }
-            else
-            {
-                expense.CreditCard.CurrentDebt -= expense.InstallmentAmount;
-            }
-
             await context.SaveChangesAsync();
 
             return Results.Ok(expense);
         }
-        catch
+        catch (Exception ex)
         {
-            return Results.BadRequest(new { error = "Erro ao atualizar status do pagamento" });
+            return Results.BadRequest(new { error = "Erro ao atualizar status do pagamento", details = ex.Message });
         }
     }
 }

@@ -1,6 +1,5 @@
 <template>
   <SimpleModal :open="open" @close="$emit('close')">
-    <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center space-x-3">
         <div
@@ -20,7 +19,6 @@
       </button>
     </div>
 
-    <!-- Form -->
     <form @submit.prevent="handleSubmit" class="space-y-6">
       <div>
         <label for="name" class="block text-sm font-medium text-gray-300 mb-2">
@@ -58,8 +56,6 @@
         </div>
       </div>
 
-      <!-- CAMPO REMOVIDO: Dívida Atual - será calculada automaticamente -->
-
       <div>
         <label
           for="dueDate"
@@ -77,7 +73,6 @@
         </select>
       </div>
 
-      <!-- Informação sobre dívida automática -->
       <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
         <div class="flex items-start space-x-2">
           <InformationCircleIcon
@@ -93,7 +88,6 @@
         </div>
       </div>
 
-      <!-- Buttons -->
       <div class="flex gap-3 pt-4">
         <button
           type="button"
@@ -126,6 +120,7 @@ import {
   InformationCircleIcon,
 } from "@heroicons/vue/24/outline";
 import SimpleModal from "./SimpleModal.vue";
+import { useDateReferenceStore } from "../../stores/dateReference";
 
 interface CreditCard {
   id?: string;
@@ -140,10 +135,16 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+const dateStore = useDateReferenceStore();
 
 const emit = defineEmits<{
   close: [];
-  submit: [creditCard: Omit<CreditCard, "id"> & { id?: string }];
+  submit: [
+    creditCard: Omit<CreditCard, "id"> & {
+      id?: string;
+      monthReference?: string;
+    }
+  ];
 }>();
 
 const loading = ref(false);
@@ -170,6 +171,7 @@ const handleSubmit = async () => {
       ...form,
       limit: Number(form.limit),
       dueDate: Number(form.dueDate),
+      monthReference: dateStore.monthYearString,
     };
 
     if (isEditing.value && props.creditCard?.id) {
@@ -189,13 +191,11 @@ watch(
   () => props.open,
   (newValue) => {
     if (newValue && props.creditCard) {
-      // Editando
       form.name = props.creditCard.name;
       form.limit = props.creditCard.limit;
       form.dueDate = props.creditCard.dueDate;
       isEditing.value = true;
     } else if (newValue) {
-      // Novo
       resetForm();
     }
   }
