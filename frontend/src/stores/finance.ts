@@ -88,8 +88,6 @@ export const useFinanceStore = defineStore("finance", {
       );
     },
 
-    // 🚀 MUDANÇA PRINCIPAL: Remove a filtragem por mês
-    // Deixa o backend gerenciar a lógica de negócio
     currentMonthCreditCards(): CreditCard[] {
       return this.creditCards;
     },
@@ -252,7 +250,7 @@ export const useFinanceStore = defineStore("finance", {
         const response = await api.get(
           `/api/credit-cards?monthReference=${month}`
         );
-        // ✅ Substitui todos os cartões com os dados atualizados do backend
+
         this.creditCards = response.data;
       } catch (error: any) {
         const { error: showError } = useNotification();

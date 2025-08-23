@@ -82,8 +82,7 @@ public static class CreditCardsEndpoints
                 card.TotalConsumption = totalConsumption;
             }
 
-            // MUDANÇA PRINCIPAL: Remover filtro restritivo
-            // Sempre retorna todos os cartões do usuário
+
             return Results.Ok(creditCards);
         }
         catch (Exception ex)
@@ -92,7 +91,6 @@ public static class CreditCardsEndpoints
         }
     }
 
-    // ... resto dos métodos permanecem iguais
     private static async Task<IResult> GetCreditCard(
         Guid id,
         AppDbContext context,
