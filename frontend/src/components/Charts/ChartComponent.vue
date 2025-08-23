@@ -24,7 +24,6 @@ import {
   Filler,
 } from "chart.js";
 
-// Registrar TODOS os componentes necessários do Chart.js
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -62,7 +61,6 @@ const createChart = async () => {
 
   await nextTick();
 
-  // Destruir gráfico existente se houver
   if (chartInstance) {
     chartInstance.destroy();
     chartInstance = null;
@@ -89,11 +87,10 @@ const createChart = async () => {
 const updateChart = () => {
   if (chartInstance && props.data) {
     chartInstance.data = props.data;
-    chartInstance.update("active");
+    chartInstance.update();
   }
 };
 
-// Watchers
 watch(() => props.data, updateChart, { deep: true });
 watch(() => props.type, createChart);
 watch(() => props.options, createChart, { deep: true });

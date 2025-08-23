@@ -1,7 +1,6 @@
 <template>
   <AppLayout>
     <div class="space-y-6">
-      <!-- Header com Navegação de Mês -->
       <div
         class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
       >
@@ -12,7 +11,6 @@
           </p>
         </div>
 
-        <!-- Navegação de Mês -->
         <div class="flex items-center space-x-4">
           <div
             class="flex items-center space-x-2 bg-dark-900 border border-dark-700 rounded-lg p-2"
@@ -55,7 +53,6 @@
         </div>
       </div>
 
-      <!-- Indicador de Mês Atual -->
       <div
         class="bg-primary-900/20 border border-primary-500/30 rounded-lg p-4"
       >
@@ -73,7 +70,6 @@
         </div>
       </div>
 
-      <!-- Resumo do Mês de Referência -->
       <div class="bg-dark-900 border border-dark-800 rounded-xl p-6 shadow-lg">
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-xl font-semibold text-gray-100">
@@ -89,9 +85,7 @@
           </div>
         </div>
 
-        <!-- Cards de Resumo -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <!-- Entradas -->
           <div
             class="group relative overflow-hidden bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20 rounded-xl p-4 hover:from-green-500/15 hover:to-green-600/10 transition-all duration-300 cursor-pointer"
             @click="navigateTo('/income')"
@@ -120,7 +114,6 @@
             </div>
           </div>
 
-          <!-- Cartões de Crédito -->
           <div
             class="group relative overflow-hidden bg-gradient-to-br from-red-500/10 to-red-600/5 border border-red-500/20 rounded-xl p-4 hover:from-red-500/15 hover:to-red-600/10 transition-all duration-300 cursor-pointer"
             @click="navigateTo('/credit-cards')"
@@ -147,7 +140,6 @@
             </div>
           </div>
 
-          <!-- Assinaturas -->
           <div
             class="group relative overflow-hidden bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 rounded-xl p-4 hover:from-purple-500/15 hover:to-purple-600/10 transition-all duration-300 cursor-pointer"
             @click="navigateTo('/subscriptions')"
@@ -175,7 +167,6 @@
             </div>
           </div>
 
-          <!-- Serviços -->
           <div
             class="group relative overflow-hidden bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 rounded-xl p-4 hover:from-blue-500/15 hover:to-blue-600/10 transition-all duration-300 cursor-pointer"
             @click="navigateTo('/services')"
@@ -204,7 +195,6 @@
           </div>
         </div>
 
-        <!-- Indicador de Saldo Total -->
         <div
           class="mt-6 p-4 bg-dark-800/50 rounded-xl border-l-4"
           :class="
@@ -250,9 +240,7 @@
         </div>
       </div>
 
-      <!-- Gráficos de Despesas -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Gráfico de Pizza - Distribuição de Despesas -->
         <div
           class="bg-dark-900 border border-dark-800 rounded-xl p-6 shadow-lg"
         >
@@ -295,18 +283,15 @@
           </div>
         </div>
 
-        <!-- Gráfico de Linhas - Evolução das Despesas -->
         <div
           class="bg-dark-900 border border-dark-800 rounded-xl p-6 shadow-lg"
         >
           <div class="flex items-center justify-between mb-6">
             <div>
               <h3 class="text-lg font-semibold text-gray-100">
-                Evolução das Despesas
+                Comparativo Mensal
               </h3>
-              <p class="text-sm text-gray-400">
-                Comparativo dos últimos 6 meses
-              </p>
+              <p class="text-sm text-gray-400">Histórico com dados reais</p>
             </div>
             <div class="flex items-center space-x-2">
               <select
@@ -322,11 +307,11 @@
           </div>
 
           <div class="h-80">
-            <div v-if="hasHistoricalData">
+            <div v-if="hasHistoricalData" class="h-full">
               <ChartComponent
-                type="line"
-                :data="lineChartData"
-                :options="lineChartOptions"
+                type="bar"
+                :data="barChartData"
+                :options="barChartOptions"
                 height="320px"
               />
             </div>
@@ -341,7 +326,6 @@
             </div>
           </div>
 
-          <!-- Insights de Tendência -->
           <div
             v-if="hasHistoricalData"
             class="mt-4 p-3 bg-dark-800/50 rounded-lg"
@@ -360,9 +344,7 @@
         </div>
       </div>
 
-      <!-- Transações Recentes e Próximos Vencimentos -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Transações Recentes -->
         <div
           class="bg-dark-900 border border-dark-800 rounded-xl p-6 shadow-lg"
         >
@@ -412,7 +394,6 @@
           </div>
         </div>
 
-        <!-- Próximos Vencimentos -->
         <div
           class="bg-dark-900 border border-dark-800 rounded-xl p-6 shadow-lg"
         >
@@ -481,7 +462,6 @@ import {
   ChartBarIcon,
 } from "@heroicons/vue/24/outline";
 
-// Interfaces
 interface UpcomingPayment {
   id: string;
   name: string;
@@ -502,12 +482,10 @@ const router = useRouter();
 const financeStore = useFinanceStore();
 const dateStore = useDateReferenceStore();
 
-// Estados reativos
 const loading = ref(false);
 const mounted = ref(false);
 const selectedExpenseType = ref("all");
 
-// Computed properties
 const lastUpdateTime = computed(() => {
   return new Date().toLocaleTimeString("pt-BR", {
     hour: "2-digit",
@@ -536,22 +514,20 @@ const usagePercentage = computed(() => {
   return (used / total) * 100;
 });
 
-// Verificar se há dados para exibir gráficos
 const hasExpenseData = computed(() => {
   return monthlyData.value.totalExpenses > 0;
 });
 
 const hasHistoricalData = computed(() => {
-  return true; // Sempre mostrar dados simulados
+  const months = getHistoricalMonthsWithRealData();
+  return months.length > 0;
 });
 
-// Dados do gráfico de pizza com cores elegantes
 const pieChartData = computed(() => {
   const creditCardDebt = financeStore.totalCreditCardDebt || 0;
   const subscriptions = financeStore.totalSubscriptions || 0;
   const services = financeStore.totalServices || 0;
 
-  // Se não há dados reais, usar dados simulados para demonstração
   const hasRealData = creditCardDebt > 0 || subscriptions > 0 || services > 0;
 
   if (!hasRealData) {
@@ -560,11 +536,7 @@ const pieChartData = computed(() => {
       datasets: [
         {
           data: [500, 80, 400],
-          backgroundColor: [
-            "#ef4444", // Vermelho elegante
-            "#8b5cf6", // Roxo elegante
-            "#3b82f6", // Azul elegante
-          ],
+          backgroundColor: ["#ef4444", "#8b5cf6", "#3b82f6"],
           borderColor: ["#dc2626", "#7c3aed", "#2563eb"],
           borderWidth: 2,
           hoverBackgroundColor: ["#f87171", "#a78bfa", "#60a5fa"],
@@ -579,11 +551,7 @@ const pieChartData = computed(() => {
     datasets: [
       {
         data: [creditCardDebt, subscriptions, services],
-        backgroundColor: [
-          "#ef4444", // Vermelho elegante
-          "#8b5cf6", // Roxo elegante
-          "#3b82f6", // Azul elegante
-        ],
+        backgroundColor: ["#ef4444", "#8b5cf6", "#3b82f6"],
         borderColor: ["#dc2626", "#7c3aed", "#2563eb"],
         borderWidth: 2,
         hoverBackgroundColor: ["#f87171", "#a78bfa", "#60a5fa"],
@@ -593,79 +561,6 @@ const pieChartData = computed(() => {
   };
 });
 
-// Dados do gráfico de linhas
-const lineChartData = computed(() => {
-  const last6Months = getLast6MonthsExpensesData();
-
-  const datasets = [];
-
-  if (
-    selectedExpenseType.value === "all" ||
-    selectedExpenseType.value === "cards"
-  ) {
-    datasets.push({
-      label: "Cartões de Crédito",
-      data: last6Months.map((month) => month.cards),
-      borderColor: "#ef4444",
-      backgroundColor: "rgba(239, 68, 68, 0.1)",
-      tension: 0.4,
-      fill: false,
-      pointBackgroundColor: "#ef4444",
-      pointBorderColor: "#ffffff",
-      pointBorderWidth: 2,
-      pointRadius: 6,
-      pointHoverRadius: 8,
-      borderWidth: 3,
-    });
-  }
-
-  if (
-    selectedExpenseType.value === "all" ||
-    selectedExpenseType.value === "subscriptions"
-  ) {
-    datasets.push({
-      label: "Assinaturas",
-      data: last6Months.map((month) => month.subscriptions),
-      borderColor: "#8b5cf6",
-      backgroundColor: "rgba(139, 92, 246, 0.1)",
-      tension: 0.4,
-      fill: false,
-      pointBackgroundColor: "#8b5cf6",
-      pointBorderColor: "#ffffff",
-      pointBorderWidth: 2,
-      pointRadius: 6,
-      pointHoverRadius: 8,
-      borderWidth: 3,
-    });
-  }
-
-  if (
-    selectedExpenseType.value === "all" ||
-    selectedExpenseType.value === "services"
-  ) {
-    datasets.push({
-      label: "Serviços",
-      data: last6Months.map((month) => month.services),
-      borderColor: "#3b82f6",
-      backgroundColor: "rgba(59, 130, 246, 0.1)",
-      tension: 0.4,
-      fill: false,
-      pointBackgroundColor: "#3b82f6",
-      pointBorderColor: "#ffffff",
-      pointBorderWidth: 2,
-      pointRadius: 6,
-      pointHoverRadius: 8,
-      borderWidth: 3,
-    });
-  }
-
-  return {
-    labels: last6Months.map((month) => month.label),
-    datasets,
-  };
-});
-
-// Opções do gráfico de pizza
 const pieChartOptions = {
   responsive: true,
   maintainAspectRatio: false,
@@ -716,8 +611,70 @@ const pieChartOptions = {
   },
 };
 
-// Opções do gráfico de linhas
-const lineChartOptions = {
+const barChartData = computed(() => {
+  const monthsWithData = getHistoricalMonthsWithRealData();
+
+  if (monthsWithData.length === 0) {
+    return {
+      labels: [],
+      datasets: [],
+    };
+  }
+
+  const datasets = [];
+
+  if (
+    selectedExpenseType.value === "all" ||
+    selectedExpenseType.value === "cards"
+  ) {
+    datasets.push({
+      label: "Cartões de Crédito",
+      data: monthsWithData.map((month) => month.cards),
+      backgroundColor: "#ef4444",
+      borderColor: "#dc2626",
+      borderWidth: 2,
+      borderRadius: 4,
+      borderSkipped: false,
+    });
+  }
+
+  if (
+    selectedExpenseType.value === "all" ||
+    selectedExpenseType.value === "subscriptions"
+  ) {
+    datasets.push({
+      label: "Assinaturas",
+      data: monthsWithData.map((month) => month.subscriptions),
+      backgroundColor: "#8b5cf6",
+      borderColor: "#7c3aed",
+      borderWidth: 2,
+      borderRadius: 4,
+      borderSkipped: false,
+    });
+  }
+
+  if (
+    selectedExpenseType.value === "all" ||
+    selectedExpenseType.value === "services"
+  ) {
+    datasets.push({
+      label: "Serviços",
+      data: monthsWithData.map((month) => month.services),
+      backgroundColor: "#3b82f6",
+      borderColor: "#2563eb",
+      borderWidth: 2,
+      borderRadius: 4,
+      borderSkipped: false,
+    });
+  }
+
+  return {
+    labels: monthsWithData.map((month) => month.label),
+    datasets,
+  };
+});
+
+const barChartOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
@@ -778,10 +735,11 @@ const lineChartOptions = {
         color: "#374151",
         drawBorder: false,
       },
+      beginAtZero: true,
     },
   },
   animation: {
-    duration: 2000,
+    duration: 1000,
     easing: "easeOutQuart",
   },
   interaction: {
@@ -789,47 +747,20 @@ const lineChartOptions = {
     mode: "index",
   },
   elements: {
-    point: {
-      hoverRadius: 8,
+    bar: {
+      borderRadius: 4,
     },
   },
 };
 
-// Computed para insights
 const expenseTrend = computed(() => {
-  const currentTotal = monthlyData.value.totalExpenses;
-  const previousTotal = currentTotal * 0.9; // Simulação
-  const change =
-    previousTotal > 0
-      ? ((currentTotal - previousTotal) / previousTotal) * 100
-      : 0;
-
-  if (change > 5) {
-    return {
-      icon: ArrowTrendingUpIcon,
-      color: "text-red-400",
-      text: `Despesas aumentaram ${change.toFixed(
-        1
-      )}% em relação ao mês anterior`,
-    };
-  } else if (change < -5) {
-    return {
-      icon: ArrowTrendingDownIcon,
-      color: "text-green-400",
-      text: `Despesas diminuíram ${Math.abs(change).toFixed(
-        1
-      )}% em relação ao mês anterior`,
-    };
-  } else {
-    return {
-      icon: ArrowTrendingUpIcon,
-      color: "text-gray-400",
-      text: "Despesas estáveis em relação ao mês anterior",
-    };
-  }
+  return {
+    icon: ArrowTrendingUpIcon,
+    color: "text-gray-400",
+    text: "Histórico sendo construído conforme novos dados são adicionados",
+  };
 });
 
-// Transações recentes baseadas em dados reais
 const recentTransactions = computed((): Transaction[] => {
   return (
     financeStore.currentMonthIncomes?.slice(0, 5).map((income) => ({
@@ -841,11 +772,9 @@ const recentTransactions = computed((): Transaction[] => {
   );
 });
 
-// Próximos vencimentos baseados em dados reais
 const upcomingPayments = computed((): UpcomingPayment[] => {
   const upcoming: UpcomingPayment[] = [];
 
-  // Adicionar cartões próximos do vencimento
   if (financeStore.currentMonthCreditCards) {
     const today = new Date().getDate();
     financeStore.currentMonthCreditCards.forEach((card) => {
@@ -863,7 +792,6 @@ const upcomingPayments = computed((): UpcomingPayment[] => {
     });
   }
 
-  // Adicionar assinaturas próximas da renovação
   if (financeStore.currentMonthSubscriptions) {
     financeStore.currentMonthSubscriptions.forEach((subscription) => {
       const renewalDate = new Date(subscription.renewalDate);
@@ -884,7 +812,6 @@ const upcomingPayments = computed((): UpcomingPayment[] => {
     });
   }
 
-  // Adicionar serviços próximos do vencimento
   if (financeStore.currentMonthServices) {
     const today = new Date().getDate();
     financeStore.currentMonthServices.forEach((service) => {
@@ -905,7 +832,27 @@ const upcomingPayments = computed((): UpcomingPayment[] => {
   return upcoming.sort((a, b) => a.daysUntilDue - b.daysUntilDue).slice(0, 5);
 });
 
-// Funções utilitárias
+const getHistoricalMonthsWithRealData = () => {
+  const months = [];
+
+  if (
+    financeStore.totalCreditCardDebt > 0 ||
+    financeStore.totalSubscriptions > 0 ||
+    financeStore.totalServices > 0
+  ) {
+    months.push({
+      label: new Intl.DateTimeFormat("pt-BR", {
+        month: "short",
+      }).format(new Date()),
+      cards: financeStore.totalCreditCardDebt || 0,
+      subscriptions: financeStore.totalSubscriptions || 0,
+      services: financeStore.totalServices || 0,
+    });
+  }
+
+  return months;
+};
+
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -922,39 +869,6 @@ const formatDate = (date: string) => {
 
 const navigateTo = (route: string) => {
   router.push(route);
-};
-
-const getLast6MonthsExpensesData = () => {
-  const months = [];
-  const currentDate = new Date();
-
-  for (let i = 5; i >= 0; i--) {
-    const date = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth() - i,
-      1
-    );
-    const monthName = new Intl.DateTimeFormat("pt-BR", {
-      month: "short",
-    }).format(date);
-
-    // Usar dados reais ou simulação baseada nos dados atuais
-    const baseCards = financeStore.totalCreditCardDebt || 500;
-    const baseSubscriptions = financeStore.totalSubscriptions || 80;
-    const baseServices = financeStore.totalServices || 400;
-
-    months.push({
-      label: monthName,
-      cards: Math.max(0, baseCards * (0.7 + Math.random() * 0.6)),
-      subscriptions: Math.max(
-        0,
-        baseSubscriptions * (0.8 + Math.random() * 0.4)
-      ),
-      services: Math.max(0, baseServices * (0.9 + Math.random() * 0.2)),
-    });
-  }
-
-  return months;
 };
 
 const getUrgencyColor = (days: number) => {
@@ -976,7 +890,6 @@ const getUrgencyText = (days: number) => {
   return `${days} dias`;
 };
 
-// Lifecycle
 onMounted(async () => {
   if (mounted.value) return;
   mounted.value = true;
@@ -992,7 +905,6 @@ onMounted(async () => {
   }
 });
 
-// Watch para mudanças de mês
 let watchTimeout: NodeJS.Timeout;
 watch(
   () => dateStore.monthYearString,
