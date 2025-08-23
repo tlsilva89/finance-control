@@ -10,7 +10,7 @@ using FinanceControl.Api.Endpoints;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL")));
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -77,10 +77,11 @@ CreditCardExpensesEndpoints.Map(app);
 SubscriptionsEndpoints.Map(app);
 ServicesEndpoints.Map(app);
 
+
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    context.Database.EnsureCreated();
+    context.Database.Migrate();
 }
 
 app.Run();

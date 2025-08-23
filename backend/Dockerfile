@@ -16,7 +16,4 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
-# Criar diretório para dados
-RUN mkdir -p /data && chmod 755 /data
-
-ENTRYPOINT ["dotnet", "FinanceControl.Api.dll"] 
+ENTRYPOINT ["dotnet", "FinanceControl.Api.dll"]

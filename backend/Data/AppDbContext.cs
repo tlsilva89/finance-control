@@ -32,7 +32,7 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<Income>(entity =>
         {
-            entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.Amount).HasColumnType("numeric(18,2)");
             entity.HasOne(e => e.User)
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
@@ -41,8 +41,8 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<CreditCard>(entity =>
         {
-            entity.Property(e => e.Limit).HasColumnType("decimal(18,2)");
-            entity.Property(e => e.CurrentDebt).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.Limit).HasColumnType("numeric(18,2)");
+            entity.Property(e => e.CurrentDebt).HasColumnType("numeric(18,2)");
             entity.HasOne(e => e.User)
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
@@ -55,8 +55,8 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<CreditCardExpense>(entity =>
         {
-            entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
-            entity.Property(e => e.InstallmentAmount).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.Amount).HasColumnType("numeric(18,2)");
+            entity.Property(e => e.InstallmentAmount).HasColumnType("numeric(18,2)");
             entity.HasOne(e => e.User)
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
@@ -69,7 +69,7 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<Subscription>(entity =>
         {
-            entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.Amount).HasColumnType("numeric(18,2)");
             entity.HasOne(e => e.User)
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
@@ -78,7 +78,7 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<Service>(entity =>
         {
-            entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.Amount).HasColumnType("numeric(18,2)");
             entity.HasOne(e => e.User)
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
