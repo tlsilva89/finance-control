@@ -24,12 +24,22 @@ public static class CreditCardExpensesEndpoints
         group.MapPatch("/{id:guid}/pay", MarkAsPaid);
     }
 
+    private static DateTime EnsureUtc(DateTime dateTime)
+    {
+        return dateTime.Kind switch
+        {
+            DateTimeKind.Unspecified => DateTime.SpecifyKind(dateTime, DateTimeKind.Utc),
+            DateTimeKind.Local => dateTime.ToUniversalTime(),
+            _ => dateTime
+        };
+    }
+
     private static async Task<IResult> GetExpenses(
-        string? monthReference,
-        string? category,
-        bool? isPaid,
         AppDbContext context,
-        HttpContext httpContext)
+        HttpContext httpContext,
+        string? monthReference = null,
+        string? category = null,
+        bool? isPaid = null)
     {
         try
         {
@@ -73,9 +83,9 @@ public static class CreditCardExpensesEndpoints
 
     private static async Task<IResult> GetExpensesByCard(
         Guid cardId,
-        string? monthReference,
         AppDbContext context,
-        HttpContext httpContext)
+        HttpContext httpContext,
+        string? monthReference = null)
     {
         try
         {
@@ -114,6 +124,12 @@ public static class CreditCardExpensesEndpoints
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(expense.Description))
+                return Results.BadRequest(new { error = "Descrição é obrigatória" });
+                
+            if (expense.Amount <= 0)
+                return Results.BadRequest(new { error = "Valor deve ser maior que zero" });
+
             var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
             var creditCard = await context.CreditCards
@@ -127,6 +143,7 @@ public static class CreditCardExpensesEndpoints
             expense.Id = Guid.NewGuid();
             expense.UserId = userId;
             expense.CreatedAt = DateTime.UtcNow;
+            expense.PurchaseDate = EnsureUtc(expense.PurchaseDate);
 
             if (expense.CurrentInstallment <= 0)
             {
@@ -161,6 +178,26 @@ public static class CreditCardExpensesEndpoints
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(request.Description))
+                return Results.BadRequest(new { error = "Descrição é obrigatória" });
+                
+            if (request.Amount <= 0)
+                return Results.BadRequest(new { error = "Valor deve ser maior que zero" });
+                
+            if (request.InstallmentAmount <= 0)
+                return Results.BadRequest(new { error = "Valor da parcela deve ser maior que zero" });
+                
+            if (request.Installments <= 0)
+                return Results.BadRequest(new { error = "Número de parcelas deve ser maior que zero" });
+                
+            if (string.IsNullOrWhiteSpace(request.Category))
+                return Results.BadRequest(new { error = "Categoria é obrigatória" });
+
+            if (!DateTime.TryParse(request.PurchaseDate, out var baseDate))
+                return Results.BadRequest(new { error = "Data de compra inválida" });
+
+            baseDate = EnsureUtc(baseDate);
+
             var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
             var creditCard = await context.CreditCards
@@ -172,11 +209,10 @@ public static class CreditCardExpensesEndpoints
             }
 
             var expenses = new List<CreditCardExpense>();
-            var baseDate = DateTime.Parse(request.PurchaseDate);
 
             for (int i = 1; i <= request.Installments; i++)
             {
-                var installmentDate = baseDate.AddMonths(i - 1);
+                var installmentDate = EnsureUtc(baseDate.AddMonths(i - 1));
 
                 var expense = new CreditCardExpense
                 {
@@ -215,6 +251,26 @@ public static class CreditCardExpensesEndpoints
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(request.Description))
+                return Results.BadRequest(new { error = "Descrição é obrigatória" });
+                
+            if (request.TotalAmount <= 0)
+                return Results.BadRequest(new { error = "Valor total deve ser maior que zero" });
+                
+            if (request.InstallmentAmount <= 0)
+                return Results.BadRequest(new { error = "Valor da parcela deve ser maior que zero" });
+                
+            if (request.TotalInstallments <= 0)
+                return Results.BadRequest(new { error = "Total de parcelas deve ser maior que zero" });
+                
+            if (request.CurrentInstallment <= 0)
+                return Results.BadRequest(new { error = "Parcela atual deve ser maior que zero" });
+
+            if (!DateTime.TryParse(request.OriginalPurchaseDate, out var originalDate))
+                return Results.BadRequest(new { error = "Data original de compra inválida" });
+
+            originalDate = EnsureUtc(originalDate);
+
             var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
             var creditCard = await context.CreditCards
@@ -226,11 +282,10 @@ public static class CreditCardExpensesEndpoints
             }
 
             var expenses = new List<CreditCardExpense>();
-            var originalDate = DateTime.Parse(request.OriginalPurchaseDate);
 
             for (int i = request.CurrentInstallment; i <= request.TotalInstallments; i++)
             {
-                var installmentDate = originalDate.AddMonths(i - 1);
+                var installmentDate = EnsureUtc(originalDate.AddMonths(i - 1));
 
                 var expense = new CreditCardExpense
                 {
@@ -270,6 +325,12 @@ public static class CreditCardExpensesEndpoints
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(updatedExpense.Description))
+                return Results.BadRequest(new { error = "Descrição é obrigatória" });
+                
+            if (updatedExpense.Amount <= 0)
+                return Results.BadRequest(new { error = "Valor deve ser maior que zero" });
+
             var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
             var expense = await context.CreditCardExpenses
@@ -282,7 +343,7 @@ public static class CreditCardExpensesEndpoints
 
             expense.Description = updatedExpense.Description;
             expense.Amount = updatedExpense.Amount;
-            expense.PurchaseDate = updatedExpense.PurchaseDate;
+            expense.PurchaseDate = EnsureUtc(updatedExpense.PurchaseDate);
             expense.Installments = updatedExpense.Installments;
             expense.CurrentInstallment = updatedExpense.CurrentInstallment;
             expense.Category = updatedExpense.Category;

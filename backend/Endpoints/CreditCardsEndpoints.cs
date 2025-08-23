@@ -21,10 +21,20 @@ public static class CreditCardsEndpoints
         group.MapDelete("/{id:guid}", DeleteCreditCard);
     }
 
+    private static DateTime EnsureUtc(DateTime dateTime)
+    {
+        return dateTime.Kind switch
+        {
+            DateTimeKind.Unspecified => DateTime.SpecifyKind(dateTime, DateTimeKind.Utc),
+            DateTimeKind.Local => dateTime.ToUniversalTime(),
+            _ => dateTime
+        };
+    }
+
     private static async Task<IResult> GetCreditCards(
-        string? monthReference,
         AppDbContext context,
-        HttpContext httpContext)
+        HttpContext httpContext,
+        string? monthReference = null)
     {
         try
         {
@@ -39,13 +49,13 @@ public static class CreditCardsEndpoints
             if (!string.IsNullOrEmpty(monthReference) &&
                 DateTime.TryParseExact(monthReference, "yyyy-MM", null, System.Globalization.DateTimeStyles.None, out var date))
             {
-                startDate = new DateTime(date.Year, date.Month, 1);
-                endDate = startDate.AddMonths(1).AddDays(-1);
+                startDate = EnsureUtc(new DateTime(date.Year, date.Month, 1));
+                endDate = EnsureUtc(startDate.AddMonths(1).AddDays(-1));
             }
             else
             {
-                var now = DateTime.Now;
-                startDate = new DateTime(now.Year, now.Month, 1);
+                var now = DateTime.UtcNow;
+                startDate = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
                 endDate = startDate.AddMonths(1).AddDays(-1);
             }
 
@@ -82,9 +92,9 @@ public static class CreditCardsEndpoints
 
             return Results.Ok(creditCards);
         }
-        catch
+        catch (Exception ex)
         {
-            return Results.BadRequest(new { error = "Erro ao buscar cartões" });
+            return Results.BadRequest(new { error = "Erro ao buscar cartões", details = ex.Message });
         }
     }
 
@@ -104,8 +114,8 @@ public static class CreditCardsEndpoints
                 return Results.NotFound(new { error = "Cartão não encontrado" });
             }
 
-            var now = DateTime.Now;
-            var startDate = new DateTime(now.Year, now.Month, 1);
+            var now = DateTime.UtcNow;
+            var startDate = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var endDate = startDate.AddMonths(1).AddDays(-1);
 
             var totalDebt = await context.CreditCardExpenses
@@ -130,9 +140,9 @@ public static class CreditCardsEndpoints
 
             return Results.Ok(creditCard);
         }
-        catch
+        catch (Exception ex)
         {
-            return Results.BadRequest(new { error = "Erro ao buscar cartão" });
+            return Results.BadRequest(new { error = "Erro ao buscar cartão", details = ex.Message });
         }
     }
 
@@ -143,6 +153,15 @@ public static class CreditCardsEndpoints
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(creditCard.Name))
+                return Results.BadRequest(new { error = "Nome do cartão é obrigatório" });
+                
+            if (creditCard.Limit <= 0)
+                return Results.BadRequest(new { error = "Limite deve ser maior que zero" });
+                
+            if (creditCard.DueDate < 1 || creditCard.DueDate > 31)
+                return Results.BadRequest(new { error = "Data de vencimento deve estar entre 1 e 31" });
+
             var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             creditCard.Id = Guid.NewGuid();
             creditCard.UserId = userId;
@@ -151,7 +170,7 @@ public static class CreditCardsEndpoints
 
             if (string.IsNullOrEmpty(creditCard.MonthReference))
             {
-                creditCard.MonthReference = DateTime.Now.ToString("yyyy-MM");
+                creditCard.MonthReference = DateTime.UtcNow.ToString("yyyy-MM");
             }
 
             context.CreditCards.Add(creditCard);
@@ -159,9 +178,9 @@ public static class CreditCardsEndpoints
 
             return Results.Created($"/api/credit-cards/{creditCard.Id}", creditCard);
         }
-        catch
+        catch (Exception ex)
         {
-            return Results.BadRequest(new { error = "Erro ao criar cartão" });
+            return Results.BadRequest(new { error = "Erro ao criar cartão", details = ex.Message });
         }
     }
 
@@ -173,6 +192,15 @@ public static class CreditCardsEndpoints
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(updatedCreditCard.Name))
+                return Results.BadRequest(new { error = "Nome do cartão é obrigatório" });
+                
+            if (updatedCreditCard.Limit <= 0)
+                return Results.BadRequest(new { error = "Limite deve ser maior que zero" });
+                
+            if (updatedCreditCard.DueDate < 1 || updatedCreditCard.DueDate > 31)
+                return Results.BadRequest(new { error = "Data de vencimento deve estar entre 1 e 31" });
+
             var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var creditCard = await context.CreditCards
                 .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
@@ -189,8 +217,8 @@ public static class CreditCardsEndpoints
 
             await context.SaveChangesAsync();
 
-            var now = DateTime.Now;
-            var startDate = new DateTime(now.Year, now.Month, 1);
+            var now = DateTime.UtcNow;
+            var startDate = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var endDate = startDate.AddMonths(1).AddDays(-1);
 
             var totalDebt = await context.CreditCardExpenses
@@ -215,9 +243,9 @@ public static class CreditCardsEndpoints
 
             return Results.Ok(creditCard);
         }
-        catch
+        catch (Exception ex)
         {
-            return Results.BadRequest(new { error = "Erro ao atualizar cartão" });
+            return Results.BadRequest(new { error = "Erro ao atualizar cartão", details = ex.Message });
         }
     }
 
@@ -243,9 +271,9 @@ public static class CreditCardsEndpoints
 
             return Results.Ok(new { message = "Cartão removido com sucesso" });
         }
-        catch
+        catch (Exception ex)
         {
-            return Results.BadRequest(new { error = "Erro ao remover cartão" });
+            return Results.BadRequest(new { error = "Erro ao remover cartão", details = ex.Message });
         }
     }
 }

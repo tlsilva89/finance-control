@@ -3,7 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using FinanceControl.Api.Data;
 using FinanceControl.Api.Models;
+
 namespace FinanceControl.Api.Endpoints;
+
 public static class SubscriptionsEndpoints
 {
     public static void Map(WebApplication app)
@@ -11,32 +13,47 @@ public static class SubscriptionsEndpoints
         var group = app.MapGroup("/api/subscriptions")
             .WithTags("Subscriptions")
             .RequireAuthorization();
+
         group.MapGet("", GetSubscriptions);
         group.MapPost("", CreateSubscription);
         group.MapPut("/{id:guid}", UpdateSubscription);
         group.MapDelete("/{id:guid}", DeleteSubscription);
     }
+
+    private static DateTime EnsureUtc(DateTime dateTime)
+    {
+        return dateTime.Kind switch
+        {
+            DateTimeKind.Unspecified => DateTime.SpecifyKind(dateTime, DateTimeKind.Utc),
+            DateTimeKind.Local => dateTime.ToUniversalTime(),
+            _ => dateTime
+        };
+    }
+
     private static async Task<IResult> GetSubscriptions(
-        string? monthReference,
         AppDbContext context,
-        HttpContext httpContext)
+        HttpContext httpContext,
+        string? monthReference = null)
     {
         try
         {
             var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var query = context.Subscriptions.Where(s => s.UserId == userId);
+            
             if (!string.IsNullOrEmpty(monthReference))
             {
                 query = query.Where(s => s.MonthReference == monthReference);
             }
+            
             var subscriptions = await query.OrderBy(s => s.Name).ToListAsync();
             return Results.Ok(subscriptions);
         }
-        catch
+        catch (Exception ex)
         {
-            return Results.BadRequest(new { error = "Erro ao buscar assinaturas" });
+            return Results.BadRequest(new { error = "Erro ao buscar assinaturas", details = ex.Message });
         }
     }
+
     private static async Task<IResult> CreateSubscription(
         Subscription subscription,
         AppDbContext context,
@@ -44,19 +61,35 @@ public static class SubscriptionsEndpoints
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(subscription.Name))
+                return Results.BadRequest(new { error = "Nome da assinatura é obrigatório" });
+                
+            if (subscription.Amount <= 0)
+                return Results.BadRequest(new { error = "Valor deve ser maior que zero" });
+                
+            if (string.IsNullOrWhiteSpace(subscription.Category))
+                return Results.BadRequest(new { error = "Categoria é obrigatória" });
+                
+            if (string.IsNullOrWhiteSpace(subscription.MonthReference))
+                return Results.BadRequest(new { error = "Referência do mês é obrigatória" });
+
             var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             subscription.Id = Guid.NewGuid();
             subscription.UserId = userId;
             subscription.CreatedAt = DateTime.UtcNow;
+            subscription.RenewalDate = EnsureUtc(subscription.RenewalDate);
+            
             context.Subscriptions.Add(subscription);
             await context.SaveChangesAsync();
+            
             return Results.Created($"/api/subscriptions/{subscription.Id}", subscription);
         }
-        catch
+        catch (Exception ex)
         {
-            return Results.BadRequest(new { error = "Erro ao criar assinatura" });
+            return Results.BadRequest(new { error = "Erro ao criar assinatura", details = ex.Message });
         }
     }
+
     private static async Task<IResult> UpdateSubscription(
         Guid id,
         Subscription updatedSubscription,
@@ -65,26 +98,42 @@ public static class SubscriptionsEndpoints
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(updatedSubscription.Name))
+                return Results.BadRequest(new { error = "Nome da assinatura é obrigatório" });
+                
+            if (updatedSubscription.Amount <= 0)
+                return Results.BadRequest(new { error = "Valor deve ser maior que zero" });
+                
+            if (string.IsNullOrWhiteSpace(updatedSubscription.Category))
+                return Results.BadRequest(new { error = "Categoria é obrigatória" });
+                
+            if (string.IsNullOrWhiteSpace(updatedSubscription.MonthReference))
+                return Results.BadRequest(new { error = "Referência do mês é obrigatória" });
+
             var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var subscription = await context.Subscriptions
                 .FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId);
+                
             if (subscription == null)
             {
                 return Results.NotFound(new { error = "Assinatura não encontrada" });
             }
+            
             subscription.Name = updatedSubscription.Name;
             subscription.Amount = updatedSubscription.Amount;
-            subscription.RenewalDate = updatedSubscription.RenewalDate;
+            subscription.RenewalDate = EnsureUtc(updatedSubscription.RenewalDate);
             subscription.Category = updatedSubscription.Category;
             subscription.MonthReference = updatedSubscription.MonthReference;
+            
             await context.SaveChangesAsync();
             return Results.Ok(subscription);
         }
-        catch
+        catch (Exception ex)
         {
-            return Results.BadRequest(new { error = "Erro ao atualizar assinatura" });
+            return Results.BadRequest(new { error = "Erro ao atualizar assinatura", details = ex.Message });
         }
     }
+
     private static async Task<IResult> DeleteSubscription(
         Guid id,
         AppDbContext context,
@@ -95,17 +144,20 @@ public static class SubscriptionsEndpoints
             var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var subscription = await context.Subscriptions
                 .FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId);
+                
             if (subscription == null)
             {
                 return Results.NotFound(new { error = "Assinatura não encontrada" });
             }
+            
             context.Subscriptions.Remove(subscription);
             await context.SaveChangesAsync();
+            
             return Results.Ok(new { message = "Assinatura removida com sucesso" });
         }
-        catch
+        catch (Exception ex)
         {
-            return Results.BadRequest(new { error = "Erro ao remover assinatura" });
+            return Results.BadRequest(new { error = "Erro ao remover assinatura", details = ex.Message });
         }
     }
 }
