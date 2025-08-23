@@ -2,6 +2,13 @@ import { defineStore } from "pinia";
 import api from "../services/api";
 import { useNotification } from "../composables/useNotification";
 import { useDateReferenceStore } from "./dateReference";
+import { formatDateForAPI } from "../utils/dateUtils";
+
+export interface User {
+  id: string;
+  username: string;
+  name: string;
+}
 
 export interface Income {
   id: string;
@@ -21,16 +28,17 @@ export interface CreditCard {
   dueDate: number;
   monthReference: string;
   createdAt: string;
+  expenses?: CreditCardExpense[];
 }
 
 export interface CreditCardExpense {
   id: string;
   description: string;
   amount: number;
-  installmentAmount: number;
   purchaseDate: string;
   installments: number;
   currentInstallment: number;
+  installmentAmount: number;
   category: string;
   isPaid: boolean;
   creditCardId: string;
@@ -66,6 +74,7 @@ interface FinanceState {
 }
 
 function normalizeMonthRef(ref: string): string {
+  if (!ref) return new Date().toISOString().slice(0, 7);
   const [year, month] = ref.split("-");
   return `${year}-${month.padStart(2, "0")}`;
 }
@@ -81,6 +90,7 @@ export const useFinanceStore = defineStore("finance", {
 
   getters: {
     currentMonthIncomes(): Income[] {
+      if (!Array.isArray(this.incomes)) return [];
       const dateStore = useDateReferenceStore();
       const target = normalizeMonthRef(dateStore.monthYearString);
       return this.incomes.filter(
@@ -89,10 +99,12 @@ export const useFinanceStore = defineStore("finance", {
     },
 
     currentMonthCreditCards(): CreditCard[] {
+      if (!Array.isArray(this.creditCards)) return [];
       return this.creditCards;
     },
 
     currentMonthSubscriptions(): Subscription[] {
+      if (!Array.isArray(this.subscriptions)) return [];
       const dateStore = useDateReferenceStore();
       const target = normalizeMonthRef(dateStore.monthYearString);
       return this.subscriptions.filter(
@@ -101,6 +113,7 @@ export const useFinanceStore = defineStore("finance", {
     },
 
     currentMonthServices(): Service[] {
+      if (!Array.isArray(this.services)) return [];
       const dateStore = useDateReferenceStore();
       const target = normalizeMonthRef(dateStore.monthYearString);
       return this.services.filter(
@@ -123,10 +136,12 @@ export const useFinanceStore = defineStore("finance", {
     },
 
     totalCreditCardLimit(): number {
+      if (!Array.isArray(this.creditCards)) return 0;
       return this.creditCards.reduce((sum, card) => sum + card.limit, 0);
     },
 
     totalCreditCardConsumption(): number {
+      if (!Array.isArray(this.creditCards)) return 0;
       return this.creditCards.reduce(
         (sum, card) => sum + (card.totalConsumption || 0),
         0
@@ -187,10 +202,13 @@ export const useFinanceStore = defineStore("finance", {
             normalizeMonthRef(income.monthReference) !==
             normalizeMonthRef(month)
         );
-        this.incomes.push(...response.data);
+        if (Array.isArray(response.data)) {
+          this.incomes.push(...response.data);
+        }
       } catch (error: any) {
         const { error: showError } = useNotification();
         showError(error?.message || "Erro ao carregar entradas");
+        this.incomes = Array.isArray(this.incomes) ? this.incomes : [];
       } finally {
         this.loading = false;
       }
@@ -205,8 +223,12 @@ export const useFinanceStore = defineStore("finance", {
         const incomeWithMonth = {
           ...income,
           monthReference: dateStore.monthYearString,
+          date:
+            formatDateForAPI(income.date) ||
+            new Date().toISOString().split("T")[0],
         };
         const response = await api.post("/api/incomes", incomeWithMonth);
+        if (!Array.isArray(this.incomes)) this.incomes = [];
         this.incomes.unshift(response.data);
         success("Entrada adicionada com sucesso!");
       } catch (err: any) {
@@ -217,8 +239,15 @@ export const useFinanceStore = defineStore("finance", {
 
     async updateIncome(id: string, income: Partial<Income>) {
       const { success, error } = useNotification();
+      const dateStore = useDateReferenceStore();
       try {
-        const response = await api.put(`/api/incomes/${id}`, income);
+        const incomeToUpdate = {
+          ...income,
+          monthReference: income.monthReference || dateStore.monthYearString,
+          date: income.date ? formatDateForAPI(income.date) : undefined,
+        };
+        const response = await api.put(`/api/incomes/${id}`, incomeToUpdate);
+        if (!Array.isArray(this.incomes)) this.incomes = [];
         const index = this.incomes.findIndex((i) => i.id === id);
         if (index !== -1) {
           this.incomes[index] = response.data;
@@ -234,6 +263,7 @@ export const useFinanceStore = defineStore("finance", {
       const { success, error } = useNotification();
       try {
         await api.delete(`/api/incomes/${id}`);
+        if (!Array.isArray(this.incomes)) this.incomes = [];
         this.incomes = this.incomes.filter((i) => i.id !== id);
         success("Entrada removida com sucesso!");
       } catch (err: any) {
@@ -250,11 +280,11 @@ export const useFinanceStore = defineStore("finance", {
         const response = await api.get(
           `/api/credit-cards?monthReference=${month}`
         );
-
-        this.creditCards = response.data;
+        this.creditCards = Array.isArray(response.data) ? response.data : [];
       } catch (error: any) {
         const { error: showError } = useNotification();
         showError(error?.message || "Erro ao carregar cartões");
+        this.creditCards = [];
       } finally {
         this.loading = false;
       }
@@ -267,8 +297,18 @@ export const useFinanceStore = defineStore("finance", {
       >
     ) {
       const { success, error } = useNotification();
+      const dateStore = useDateReferenceStore();
       try {
-        const response = await api.post("/api/credit-cards", creditCard);
+        const creditCardWithMonth = {
+          ...creditCard,
+          monthReference:
+            creditCard.monthReference || dateStore.monthYearString,
+        };
+        const response = await api.post(
+          "/api/credit-cards",
+          creditCardWithMonth
+        );
+        if (!Array.isArray(this.creditCards)) this.creditCards = [];
         this.creditCards.unshift(response.data);
         success("Cartão adicionado com sucesso!");
       } catch (err: any) {
@@ -279,8 +319,18 @@ export const useFinanceStore = defineStore("finance", {
 
     async updateCreditCard(id: string, creditCard: Partial<CreditCard>) {
       const { success, error } = useNotification();
+      const dateStore = useDateReferenceStore();
       try {
-        const response = await api.put(`/api/credit-cards/${id}`, creditCard);
+        const creditCardToUpdate = {
+          ...creditCard,
+          monthReference:
+            creditCard.monthReference || dateStore.monthYearString,
+        };
+        const response = await api.put(
+          `/api/credit-cards/${id}`,
+          creditCardToUpdate
+        );
+        if (!Array.isArray(this.creditCards)) this.creditCards = [];
         const index = this.creditCards.findIndex((c) => c.id === id);
         if (index !== -1) {
           this.creditCards[index] = response.data;
@@ -296,6 +346,7 @@ export const useFinanceStore = defineStore("finance", {
       const { success, error } = useNotification();
       try {
         await api.delete(`/api/credit-cards/${id}`);
+        if (!Array.isArray(this.creditCards)) this.creditCards = [];
         this.creditCards = this.creditCards.filter((c) => c.id !== id);
         success("Cartão removido com sucesso!");
       } catch (err: any) {
@@ -315,7 +366,7 @@ export const useFinanceStore = defineStore("finance", {
       const response = await api.get(
         `/api/credit-card-expenses/card/${cardId}?${params.toString()}`
       );
-      return response.data;
+      return Array.isArray(response.data) ? response.data : [];
     },
 
     async addExpense(
@@ -324,7 +375,16 @@ export const useFinanceStore = defineStore("finance", {
         "id" | "createdAt" | "installmentAmount" | "currentInstallment"
       >
     ) {
-      const response = await api.post("/api/credit-card-expenses", expense);
+      const expenseToAdd = {
+        ...expense,
+        purchaseDate:
+          formatDateForAPI(expense.purchaseDate) ||
+          new Date().toISOString().split("T")[0],
+      };
+      const response = await api.post(
+        "/api/credit-card-expenses",
+        expenseToAdd
+      );
       return response.data;
     },
 
@@ -339,9 +399,15 @@ export const useFinanceStore = defineStore("finance", {
     }) {
       const { success, error } = useNotification();
       try {
+        const expenseToAdd = {
+          ...expense,
+          purchaseDate:
+            formatDateForAPI(expense.purchaseDate) ||
+            new Date().toISOString().split("T")[0],
+        };
         const response = await api.post(
           "/api/credit-card-expenses/with-installments",
-          expense
+          expenseToAdd
         );
         success(
           `${expense.installments} parcela(s) adicionada(s) com sucesso!`
@@ -365,9 +431,15 @@ export const useFinanceStore = defineStore("finance", {
     }) {
       const { success, error } = useNotification();
       try {
+        const expenseToAdd = {
+          ...expense,
+          originalPurchaseDate:
+            formatDateForAPI(expense.originalPurchaseDate) ||
+            new Date().toISOString().split("T")[0],
+        };
         const response = await api.post(
           "/api/credit-card-expenses/existing-with-installments",
-          expense
+          expenseToAdd
         );
         const remainingInstallments =
           expense.totalInstallments - expense.currentInstallment + 1;
@@ -382,9 +454,15 @@ export const useFinanceStore = defineStore("finance", {
     },
 
     async updateExpense(id: string, expense: Partial<CreditCardExpense>) {
+      const expenseToUpdate = {
+        ...expense,
+        purchaseDate: expense.purchaseDate
+          ? formatDateForAPI(expense.purchaseDate)
+          : undefined,
+      };
       const response = await api.put(
         `/api/credit-card-expenses/${id}`,
-        expense
+        expenseToUpdate
       );
       return response.data;
     },
@@ -410,10 +488,15 @@ export const useFinanceStore = defineStore("finance", {
           (sub) =>
             normalizeMonthRef(sub.monthReference) !== normalizeMonthRef(month)
         );
-        this.subscriptions.push(...response.data);
+        if (Array.isArray(response.data)) {
+          this.subscriptions.push(...response.data);
+        }
       } catch (error: any) {
         const { error: showError } = useNotification();
         showError(error?.message || "Erro ao carregar assinaturas");
+        this.subscriptions = Array.isArray(this.subscriptions)
+          ? this.subscriptions
+          : [];
       } finally {
         this.loading = false;
       }
@@ -428,8 +511,12 @@ export const useFinanceStore = defineStore("finance", {
         const subWithMonth = {
           ...subscription,
           monthReference: dateStore.monthYearString,
+          renewalDate:
+            formatDateForAPI(subscription.renewalDate) ||
+            new Date().toISOString().split("T")[0],
         };
         const response = await api.post("/api/subscriptions", subWithMonth);
+        if (!Array.isArray(this.subscriptions)) this.subscriptions = [];
         this.subscriptions.unshift(response.data);
         success("Assinatura adicionada com sucesso!");
       } catch (err: any) {
@@ -440,11 +527,18 @@ export const useFinanceStore = defineStore("finance", {
 
     async updateSubscription(id: string, subscription: Partial<Subscription>) {
       const { success, error } = useNotification();
+      const dateStore = useDateReferenceStore();
       try {
-        const response = await api.put(
-          `/api/subscriptions/${id}`,
-          subscription
-        );
+        const subToUpdate = {
+          ...subscription,
+          monthReference:
+            subscription.monthReference || dateStore.monthYearString,
+          renewalDate: subscription.renewalDate
+            ? formatDateForAPI(subscription.renewalDate)
+            : undefined,
+        };
+        const response = await api.put(`/api/subscriptions/${id}`, subToUpdate);
+        if (!Array.isArray(this.subscriptions)) this.subscriptions = [];
         const index = this.subscriptions.findIndex((s) => s.id === id);
         if (index !== -1) {
           this.subscriptions[index] = response.data;
@@ -460,6 +554,7 @@ export const useFinanceStore = defineStore("finance", {
       const { success, error } = useNotification();
       try {
         await api.delete(`/api/subscriptions/${id}`);
+        if (!Array.isArray(this.subscriptions)) this.subscriptions = [];
         this.subscriptions = this.subscriptions.filter((s) => s.id !== id);
         success("Assinatura removida com sucesso!");
       } catch (err: any) {
@@ -479,10 +574,13 @@ export const useFinanceStore = defineStore("finance", {
             normalizeMonthRef(service.monthReference) !==
             normalizeMonthRef(month)
         );
-        this.services.push(...response.data);
+        if (Array.isArray(response.data)) {
+          this.services.push(...response.data);
+        }
       } catch (error: any) {
         const { error: showError } = useNotification();
         showError(error?.message || "Erro ao carregar serviços");
+        this.services = Array.isArray(this.services) ? this.services : [];
       } finally {
         this.loading = false;
       }
@@ -499,6 +597,7 @@ export const useFinanceStore = defineStore("finance", {
           monthReference: dateStore.monthYearString,
         };
         const response = await api.post("/api/services", serviceWithMonth);
+        if (!Array.isArray(this.services)) this.services = [];
         this.services.unshift(response.data);
         success("Serviço adicionado com sucesso!");
       } catch (err: any) {
@@ -509,8 +608,14 @@ export const useFinanceStore = defineStore("finance", {
 
     async updateService(id: string, service: Partial<Service>) {
       const { success, error } = useNotification();
+      const dateStore = useDateReferenceStore();
       try {
-        const response = await api.put(`/api/services/${id}`, service);
+        const serviceToUpdate = {
+          ...service,
+          monthReference: service.monthReference || dateStore.monthYearString,
+        };
+        const response = await api.put(`/api/services/${id}`, serviceToUpdate);
+        if (!Array.isArray(this.services)) this.services = [];
         const index = this.services.findIndex((s) => s.id === id);
         if (index !== -1) {
           this.services[index] = response.data;
@@ -526,6 +631,7 @@ export const useFinanceStore = defineStore("finance", {
       const { success, error } = useNotification();
       try {
         await api.delete(`/api/services/${id}`);
+        if (!Array.isArray(this.services)) this.services = [];
         this.services = this.services.filter((s) => s.id !== id);
         success("Serviço removido com sucesso!");
       } catch (err: any) {

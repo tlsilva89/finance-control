@@ -1,5 +1,10 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
+import {
+  getFirstDayOfMonth,
+  getLastDayOfMonth,
+  getMonthReference,
+} from "../utils/dateUtils";
 
 export const useDateReferenceStore = defineStore("dateReference", () => {
   const currentReferenceDate = ref(new Date());
@@ -15,10 +20,7 @@ export const useDateReferenceStore = defineStore("dateReference", () => {
   });
 
   const monthYearString = computed(() => {
-    return `${currentYear.value}-${String(currentMonth.value + 1).padStart(
-      2,
-      "0"
-    )}`;
+    return getMonthReference(currentReferenceDate.value);
   });
 
   const isCurrentMonth = computed(() => {
@@ -30,9 +32,9 @@ export const useDateReferenceStore = defineStore("dateReference", () => {
   });
 
   const canGoPrevious = computed(() => {
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 12);
-    return currentReferenceDate.value > sixMonthsAgo;
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+    return currentReferenceDate.value > twelveMonthsAgo;
   });
 
   const canGoNext = computed(() => {
@@ -40,8 +42,12 @@ export const useDateReferenceStore = defineStore("dateReference", () => {
     return currentReferenceDate.value < now;
   });
 
-  const setReferenceDate = (date: Date) => {
-    currentReferenceDate.value = new Date(date);
+  const setReferenceDate = (date: Date | string) => {
+    if (typeof date === "string") {
+      currentReferenceDate.value = new Date(date);
+    } else {
+      currentReferenceDate.value = new Date(date);
+    }
   };
 
   const previousMonth = () => {
@@ -65,16 +71,15 @@ export const useDateReferenceStore = defineStore("dateReference", () => {
   };
 
   const getDateRange = () => {
-    const startDate = new Date(currentYear.value, currentMonth.value, 1);
-    const endDate = new Date(
-      currentYear.value,
-      currentMonth.value + 1,
-      0,
-      23,
-      59,
-      59
-    );
+    const startDate = getFirstDayOfMonth(currentReferenceDate.value);
+    const endDate = getLastDayOfMonth(currentReferenceDate.value);
+    endDate.setHours(23, 59, 59, 999);
     return { startDate, endDate };
+  };
+
+  const setMonthYear = (year: number, month: number) => {
+    const newDate = new Date(year, month, 1);
+    currentReferenceDate.value = newDate;
   };
 
   return {
@@ -91,5 +96,6 @@ export const useDateReferenceStore = defineStore("dateReference", () => {
     nextMonth,
     goToCurrentMonth,
     getDateRange,
+    setMonthYear,
   };
 });

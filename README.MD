@@ -9,7 +9,7 @@
 [![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?style=for-the-badge&logo=.net&logoColor=white)](https://dotnet.microsoft.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
-[📖 Documentação](#-documentação-da-api) • [🐛 Reportar Bug](https://github.com/tlsilva89/finance-control/issues) • [💡 Sugerir Feature](https://github.com/tlsilva89/finance-control/issues/new?template=feature_request.md)
+[📖 Documentação](#-documentação-da-api) • [💡 Sugerir Feature](https://github.com/tlsilva89/finance-control/issues/new?template=feature_request.md)
 
 </div>
 

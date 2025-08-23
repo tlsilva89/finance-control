@@ -2,17 +2,14 @@
   <div
     class="min-h-screen bg-gradient-to-br from-dark-950 via-dark-900 to-dark-950 flex flex-col"
   >
-    <!-- Sidebar -->
     <aside
       class="fixed inset-y-0 left-0 z-50 w-64 bg-dark-900/95 backdrop-blur-xl border-r border-dark-800/50 transform transition-all duration-300 ease-in-out lg:translate-x-0 shadow-2xl flex flex-col"
       :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
     >
-      <!-- Header do Sidebar com Logo Tipográfico -->
       <div
         class="flex items-center justify-between h-16 border-b border-dark-800/50 px-6 bg-dark-800/80"
       >
         <div class="flex items-center space-x-3">
-          <!-- Logo Tipográfico Elegante -->
           <div class="relative">
             <div class="text-2xl font-bold tracking-tight">
               <span class="text-white">Finance</span>
@@ -31,7 +28,6 @@
         </button>
       </div>
 
-      <!-- Navigation -->
       <nav class="mt-6 px-3 flex-1">
         <router-link
           v-for="item in menuItems"
@@ -44,7 +40,6 @@
           }"
           @click="sidebarOpen = false"
         >
-          <!-- Active indicator -->
           <div
             v-if="$route.path === item.path"
             class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary-400 to-primary-600 rounded-r-full"
@@ -63,14 +58,12 @@
 
           <span class="font-medium">{{ item.name }}</span>
 
-          <!-- Hover effect -->
           <div
             class="absolute inset-0 bg-gradient-to-r from-primary-500/0 to-primary-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl"
           ></div>
         </router-link>
       </nav>
 
-      <!-- User Info Atualizado - Sem Email -->
       <div
         class="mt-auto p-4 border-t border-dark-800/50 bg-dark-900/50 backdrop-blur-sm"
       >
@@ -78,13 +71,11 @@
           class="flex items-center space-x-3 p-3 rounded-xl bg-dark-800/50 border border-dark-700/50 hover:bg-dark-800/70 transition-all duration-200 cursor-pointer group"
         >
           <div class="relative">
-            <!-- Avatar com Gradiente e Ícone de Perfil -->
             <div
               class="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center shadow-lg border-2 border-primary-400/20 group-hover:scale-105 transition-transform duration-200"
             >
               <UserIcon class="w-6 h-6 text-white" />
             </div>
-            <!-- Status Online -->
             <div
               class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-dark-900 shadow-sm"
             >
@@ -105,7 +96,6 @@
               @{{ user?.username || "usuario" }}
             </p>
           </div>
-          <!-- Indicador de Menu -->
           <div
             class="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
           >
@@ -115,16 +105,13 @@
       </div>
     </aside>
 
-    <!-- Overlay for mobile -->
     <div
       v-if="sidebarOpen"
       @click="sidebarOpen = false"
       class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden transition-all duration-300"
     ></div>
 
-    <!-- Main Content -->
     <main class="lg:ml-64 flex flex-col min-h-screen">
-      <!-- Header -->
       <header
         class="sticky top-0 z-30 bg-dark-900/95 backdrop-blur-xl border-b border-dark-800/50 px-4 sm:px-6 py-4 shadow-lg"
       >
@@ -158,7 +145,6 @@
           </div>
 
           <div class="flex items-center space-x-4">
-            <!-- Balance Display -->
             <div
               class="hidden md:flex items-center space-x-4 px-4 py-2 bg-dark-800/50 rounded-xl border border-dark-700/50"
             >
@@ -175,7 +161,6 @@
               </div>
             </div>
 
-            <!-- User Menu Atualizado -->
             <div class="relative">
               <button
                 @click="userMenuOpen = !userMenuOpen"
@@ -190,7 +175,6 @@
                   </p>
                 </div>
                 <div class="relative">
-                  <!-- Avatar Melhorado no Header -->
                   <div
                     class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center border border-primary-400/20"
                   >
@@ -206,7 +190,6 @@
                 />
               </button>
 
-              <!-- User Dropdown Atualizado -->
               <div
                 v-if="userMenuOpen"
                 class="absolute right-0 mt-2 w-56 bg-dark-800/95 backdrop-blur-xl border border-dark-700/50 rounded-xl shadow-2xl py-2 z-50"
@@ -230,7 +213,6 @@
                   </div>
                 </div>
 
-                <!-- Menu Items -->
                 <div class="py-1">
                   <button
                     @click="openChangePassword"
@@ -264,12 +246,10 @@
         </div>
       </header>
 
-      <!-- Page Content -->
       <div class="flex-1 p-4 sm:p-6">
         <slot />
       </div>
 
-      <!-- Footer Fixo no Final -->
       <footer
         class="mt-auto border-t border-dark-800/50 bg-dark-900/50 backdrop-blur-sm px-4 sm:px-6 py-6"
       >
@@ -277,7 +257,6 @@
           class="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0"
         >
           <div class="flex items-center space-x-2">
-            <!-- Logo Pequeno no Footer -->
             <div class="text-lg font-bold text-gray-400">
               <span>Finance</span
               ><span class="text-primary-400 font-light">Control</span>
@@ -306,7 +285,6 @@
       </footer>
     </main>
 
-    <!-- Modais -->
     <ChangePasswordModal
       :is-open="changePasswordModalOpen"
       @close="changePasswordModalOpen = false"
@@ -403,7 +381,12 @@ const currentPageIcon = computed(() => {
 });
 
 const totalBalance = computed(() => {
-  return financeStore.balance || 0;
+  const totalIncome = financeStore.totalIncome || 0;
+  const totalExpenses =
+    (financeStore.totalCreditCardDebt || 0) +
+    (financeStore.totalSubscriptions || 0) +
+    (financeStore.totalServices || 0);
+  return totalIncome - totalExpenses;
 });
 
 const formatCurrency = (value: number) => {
@@ -429,7 +412,6 @@ const openSecuritySettings = () => {
   securityQuestionModalOpen.value = true;
 };
 
-// Close dropdowns when clicking outside
 const handleClickOutside = (event: Event) => {
   const target = event.target as Element;
   if (!target.closest(".relative")) {
@@ -448,7 +430,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Custom scrollbar for sidebar */
 aside::-webkit-scrollbar {
   width: 4px;
 }
