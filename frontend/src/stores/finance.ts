@@ -65,6 +65,11 @@ interface FinanceState {
   loading: boolean;
 }
 
+function normalizeMonthRef(ref: string): string {
+  const [year, month] = ref.split("-");
+  return `${year}-${month.padStart(2, "0")}`;
+}
+
 export const useFinanceStore = defineStore("finance", {
   state: (): FinanceState => ({
     incomes: [],
@@ -77,29 +82,31 @@ export const useFinanceStore = defineStore("finance", {
   getters: {
     currentMonthIncomes(): Income[] {
       const dateStore = useDateReferenceStore();
+      const target = normalizeMonthRef(dateStore.monthYearString);
       return this.incomes.filter(
-        (income) => income.monthReference === dateStore.monthYearString
+        (income) => normalizeMonthRef(income.monthReference) === target
       );
     },
 
+    // 🚀 MUDANÇA PRINCIPAL: Remove a filtragem por mês
+    // Deixa o backend gerenciar a lógica de negócio
     currentMonthCreditCards(): CreditCard[] {
-      const dateStore = useDateReferenceStore();
-      return this.creditCards.filter(
-        (card) => card.monthReference === dateStore.monthYearString
-      );
+      return this.creditCards;
     },
 
     currentMonthSubscriptions(): Subscription[] {
       const dateStore = useDateReferenceStore();
+      const target = normalizeMonthRef(dateStore.monthYearString);
       return this.subscriptions.filter(
-        (sub) => sub.monthReference === dateStore.monthYearString
+        (sub) => normalizeMonthRef(sub.monthReference) === target
       );
     },
 
     currentMonthServices(): Service[] {
       const dateStore = useDateReferenceStore();
+      const target = normalizeMonthRef(dateStore.monthYearString);
       return this.services.filter(
-        (service) => service.monthReference === dateStore.monthYearString
+        (service) => normalizeMonthRef(service.monthReference) === target
       );
     },
 
@@ -178,7 +185,9 @@ export const useFinanceStore = defineStore("finance", {
       try {
         const response = await api.get(`/api/incomes?monthReference=${month}`);
         this.incomes = this.incomes.filter(
-          (income) => income.monthReference !== month
+          (income) =>
+            normalizeMonthRef(income.monthReference) !==
+            normalizeMonthRef(month)
         );
         this.incomes.push(...response.data);
       } catch (error: any) {
@@ -243,13 +252,8 @@ export const useFinanceStore = defineStore("finance", {
         const response = await api.get(
           `/api/credit-cards?monthReference=${month}`
         );
-        const incoming = response.data;
-        this.creditCards = [
-          ...this.creditCards.filter(
-            (cc) => !incoming.some((inc: CreditCard) => inc.id === cc.id)
-          ),
-          ...incoming,
-        ];
+        // ✅ Substitui todos os cartões com os dados atualizados do backend
+        this.creditCards = response.data;
       } catch (error: any) {
         const { error: showError } = useNotification();
         showError(error?.message || "Erro ao carregar cartões");
@@ -405,7 +409,8 @@ export const useFinanceStore = defineStore("finance", {
           `/api/subscriptions?monthReference=${month}`
         );
         this.subscriptions = this.subscriptions.filter(
-          (sub) => sub.monthReference !== month
+          (sub) =>
+            normalizeMonthRef(sub.monthReference) !== normalizeMonthRef(month)
         );
         this.subscriptions.push(...response.data);
       } catch (error: any) {
@@ -472,7 +477,9 @@ export const useFinanceStore = defineStore("finance", {
       try {
         const response = await api.get(`/api/services?monthReference=${month}`);
         this.services = this.services.filter(
-          (service) => service.monthReference !== month
+          (service) =>
+            normalizeMonthRef(service.monthReference) !==
+            normalizeMonthRef(month)
         );
         this.services.push(...response.data);
       } catch (error: any) {

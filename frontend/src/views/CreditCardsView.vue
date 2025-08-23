@@ -375,9 +375,19 @@ const expandedCards = ref(new Set<string>());
 const cardExpenses = ref<Record<string, CreditCardExpense[]>>({});
 
 const filteredCreditCards = computed(() => {
-  if (!searchTerm.value) return financeStore.currentMonthCreditCards;
-  return financeStore.currentMonthCreditCards.filter((card) =>
-    card.name.toLowerCase().includes(searchTerm.value.toLowerCase())
+  const cards = financeStore.currentMonthCreditCards;
+  const search = searchTerm.value;
+
+  console.log("🔄 Recomputing filteredCreditCards:", {
+    totalCards: financeStore.creditCards.length,
+    currentMonthCards: cards.length,
+    searchTerm: search,
+    dateStore: dateStore.monthYearString,
+  });
+
+  if (!search) return cards;
+  return cards.filter((card) =>
+    card.name.toLowerCase().includes(search.toLowerCase())
   );
 });
 
@@ -404,6 +414,13 @@ const getProgressBarColor = (totalConsumption: number, limit: number) => {
   if (percentage >= 80) return "bg-red-500";
   if (percentage >= 60) return "bg-yellow-500";
   return "bg-blue-500";
+};
+
+const forceRefresh = () => {
+  financeStore.$patch((state) => {
+    state.creditCards = [...state.creditCards];
+  });
+  console.log("💫 Forced store refresh");
 };
 
 const openCardModal = (creditCard: CreditCard | null = null) => {
@@ -449,6 +466,8 @@ const handleCardSubmit = async (creditCardData: any) => {
     } else {
       await financeStore.addCreditCard(creditCardData);
     }
+    await nextTick();
+    forceRefresh();
     closeCardModal();
   } catch (err) {
     console.error("Erro ao salvar cartão:", err);
@@ -603,7 +622,24 @@ onMounted(async () => {
   loading.value = true;
   try {
     await nextTick();
+    console.log("🔍 DateStore monthYearString:", dateStore.monthYearString);
     await financeStore.fetchCreditCards();
+    console.log(
+      "📊 Store creditCards após fetch:",
+      financeStore.creditCards.length
+    );
+    console.log("📊 Store creditCards data:", financeStore.creditCards);
+    console.log(
+      "📋 CurrentMonth cards filtrados:",
+      financeStore.currentMonthCreditCards.length
+    );
+    console.log(
+      "📋 CurrentMonth cards data:",
+      financeStore.currentMonthCreditCards
+    );
+    console.log("🔍 Filtered cards final:", filteredCreditCards.value.length);
+    await nextTick();
+    forceRefresh();
   } catch (err) {
     console.error("Erro ao carregar cartões:", err);
   } finally {
@@ -615,14 +651,30 @@ let watchTimeout: NodeJS.Timeout;
 watch(
   () => dateStore.monthYearString,
   async (newValue, oldValue) => {
+    console.log("👀 Watch triggered:", {
+      newValue,
+      oldValue,
+      mounted: mounted.value,
+    });
     if (newValue === oldValue || !mounted.value) return;
     clearTimeout(watchTimeout);
     watchTimeout = setTimeout(async () => {
       loading.value = true;
       try {
+        console.log("🔄 Fetching cards for month:", newValue);
         await financeStore.fetchCreditCards();
+        console.log(
+          "📊 After fetch - Store cards:",
+          financeStore.creditCards.length
+        );
+        console.log(
+          "📋 After fetch - Current month cards:",
+          financeStore.currentMonthCreditCards.length
+        );
         expandedCards.value.clear();
         cardExpenses.value = {};
+        await nextTick();
+        forceRefresh();
       } catch (err) {
         console.error("Erro ao carregar cartões:", err);
       } finally {

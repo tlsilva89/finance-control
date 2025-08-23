@@ -82,14 +82,8 @@ public static class CreditCardsEndpoints
                 card.TotalConsumption = totalConsumption;
             }
 
-            if (!string.IsNullOrEmpty(monthReference))
-            {
-                creditCards = creditCards.Where(c =>
-                    c.CurrentDebt > 0 ||
-                    c.MonthReference == monthReference
-                ).ToList();
-            }
-
+            // MUDANÇA PRINCIPAL: Remover filtro restritivo
+            // Sempre retorna todos os cartões do usuário
             return Results.Ok(creditCards);
         }
         catch (Exception ex)
@@ -98,6 +92,7 @@ public static class CreditCardsEndpoints
         }
     }
 
+    // ... resto dos métodos permanecem iguais
     private static async Task<IResult> GetCreditCard(
         Guid id,
         AppDbContext context,
