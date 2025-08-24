@@ -1,6 +1,5 @@
 <template>
   <SimpleModal :open="open" @close="$emit('close')">
-    <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center space-x-3">
         <div
@@ -20,7 +19,6 @@
       </button>
     </div>
 
-    <!-- Form -->
     <form @submit.prevent="handleSubmit" class="space-y-6">
       <div>
         <label for="name" class="block text-sm font-medium text-gray-300 mb-2">
@@ -86,21 +84,23 @@
 
       <div>
         <label
-          for="renewalDate"
+          for="dueDate"
           class="block text-sm font-medium text-gray-300 mb-2"
         >
-          Data de Renovação
+          Dia da Renovação
         </label>
         <input
-          id="renewalDate"
-          v-model="form.renewalDate"
-          type="date"
+          id="dueDate"
+          v-model="form.dueDate"
+          type="number"
+          min="1"
+          max="31"
+          placeholder="Ex: 10"
           class="bg-dark-800 border border-dark-700 text-gray-100 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 w-full"
           required
         />
       </div>
 
-      <!-- Buttons -->
       <div class="flex gap-3 pt-4">
         <button
           type="button"
@@ -134,7 +134,7 @@ interface Subscription {
   id?: string;
   name: string;
   amount: number;
-  renewalDate: string;
+  dueDate: number;
   category: string;
 }
 
@@ -156,14 +156,14 @@ const isEditing = ref(false);
 const form = reactive({
   name: "",
   amount: 0,
-  renewalDate: "",
+  dueDate: 1,
   category: "",
 });
 
 const resetForm = () => {
   form.name = "";
   form.amount = 0;
-  form.renewalDate = "";
+  form.dueDate = 1;
   form.category = "";
   isEditing.value = false;
 };
@@ -175,6 +175,7 @@ const handleSubmit = async () => {
     const subscriptionData = {
       ...form,
       amount: Number(form.amount),
+      dueDate: Number(form.dueDate),
     };
 
     if (isEditing.value && props.subscription?.id) {
@@ -194,14 +195,12 @@ watch(
   () => props.open,
   (newValue) => {
     if (newValue && props.subscription) {
-      // Editando
       form.name = props.subscription.name;
       form.amount = props.subscription.amount;
-      form.renewalDate = props.subscription.renewalDate.split("T")[0];
+      form.dueDate = Number(props.subscription.dueDate);
       form.category = props.subscription.category;
       isEditing.value = true;
     } else if (newValue) {
-      // Novo
       resetForm();
     }
   }

@@ -49,7 +49,7 @@ export interface Subscription {
   id: string;
   name: string;
   amount: number;
-  renewalDate: string;
+  dueDate: number;
   category: string;
   monthReference: string;
   createdAt: string;
@@ -550,9 +550,6 @@ export const useFinanceStore = defineStore("finance", {
         const subWithMonth = {
           ...subscription,
           monthReference: dateStore.monthYearString,
-          renewalDate:
-            formatDateForAPI(subscription.renewalDate) ||
-            new Date().toISOString().split("T")[0],
         };
         const response = await api.post("/api/subscriptions", subWithMonth);
         if (!Array.isArray(this.subscriptions)) this.subscriptions = [];
@@ -572,9 +569,6 @@ export const useFinanceStore = defineStore("finance", {
           ...subscription,
           monthReference:
             subscription.monthReference || dateStore.monthYearString,
-          renewalDate: subscription.renewalDate
-            ? formatDateForAPI(subscription.renewalDate)
-            : undefined,
         };
         const response = await api.put(`/api/subscriptions/${id}`, subToUpdate);
         if (!Array.isArray(this.subscriptions)) this.subscriptions = [];

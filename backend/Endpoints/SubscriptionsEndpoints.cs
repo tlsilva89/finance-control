@@ -20,16 +20,6 @@ public static class SubscriptionsEndpoints
         group.MapDelete("/{id:int}", DeleteSubscription);
     }
 
-    private static DateTime EnsureUtc(DateTime dateTime)
-    {
-        return dateTime.Kind switch
-        {
-            DateTimeKind.Unspecified => DateTime.SpecifyKind(dateTime, DateTimeKind.Utc),
-            DateTimeKind.Local => dateTime.ToUniversalTime(),
-            _ => dateTime
-        };
-    }
-
     private static async Task<IResult> GetSubscriptions(
         AppDbContext context,
         HttpContext httpContext,
@@ -39,12 +29,10 @@ public static class SubscriptionsEndpoints
         {
             var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var query = context.Subscriptions.Where(s => s.UserId == userId);
-            
             if (!string.IsNullOrEmpty(monthReference))
             {
                 query = query.Where(s => s.MonthReference == monthReference);
             }
-            
             var subscriptions = await query.OrderBy(s => s.Name).ToListAsync();
             return Results.Ok(subscriptions);
         }
@@ -63,24 +51,22 @@ public static class SubscriptionsEndpoints
         {
             if (string.IsNullOrWhiteSpace(subscription.Name))
                 return Results.BadRequest(new { error = "Nome da assinatura é obrigatório" });
-                
             if (subscription.Amount <= 0)
                 return Results.BadRequest(new { error = "Valor deve ser maior que zero" });
-                
+            if (subscription.DueDate < 1 || subscription.DueDate > 31)
+                return Results.BadRequest(new { error = "Dia de renovação deve estar entre 1 e 31" });
             if (string.IsNullOrWhiteSpace(subscription.Category))
                 return Results.BadRequest(new { error = "Categoria é obrigatória" });
-                
             if (string.IsNullOrWhiteSpace(subscription.MonthReference))
                 return Results.BadRequest(new { error = "Referência do mês é obrigatória" });
 
             var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             subscription.UserId = userId;
             subscription.CreatedAt = DateTime.UtcNow;
-            subscription.RenewalDate = EnsureUtc(subscription.RenewalDate);
-            
+
             context.Subscriptions.Add(subscription);
             await context.SaveChangesAsync();
-            
+
             return Results.Created($"/api/subscriptions/{subscription.Id}", subscription);
         }
         catch (Exception ex)
@@ -99,31 +85,30 @@ public static class SubscriptionsEndpoints
         {
             if (string.IsNullOrWhiteSpace(updatedSubscription.Name))
                 return Results.BadRequest(new { error = "Nome da assinatura é obrigatório" });
-                
             if (updatedSubscription.Amount <= 0)
                 return Results.BadRequest(new { error = "Valor deve ser maior que zero" });
-                
+            if (updatedSubscription.DueDate < 1 || updatedSubscription.DueDate > 31)
+                return Results.BadRequest(new { error = "Dia de renovação deve estar entre 1 e 31" });
             if (string.IsNullOrWhiteSpace(updatedSubscription.Category))
                 return Results.BadRequest(new { error = "Categoria é obrigatória" });
-                
             if (string.IsNullOrWhiteSpace(updatedSubscription.MonthReference))
                 return Results.BadRequest(new { error = "Referência do mês é obrigatória" });
 
             var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var subscription = await context.Subscriptions
                 .FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId);
-                
+
             if (subscription == null)
             {
                 return Results.NotFound(new { error = "Assinatura não encontrada" });
             }
-            
+
             subscription.Name = updatedSubscription.Name;
             subscription.Amount = updatedSubscription.Amount;
-            subscription.RenewalDate = EnsureUtc(updatedSubscription.RenewalDate);
+            subscription.DueDate = updatedSubscription.DueDate;
             subscription.Category = updatedSubscription.Category;
             subscription.MonthReference = updatedSubscription.MonthReference;
-            
+
             await context.SaveChangesAsync();
             return Results.Ok(subscription);
         }
@@ -143,15 +128,15 @@ public static class SubscriptionsEndpoints
             var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var subscription = await context.Subscriptions
                 .FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId);
-                
+
             if (subscription == null)
             {
                 return Results.NotFound(new { error = "Assinatura não encontrada" });
             }
-            
+
             context.Subscriptions.Remove(subscription);
             await context.SaveChangesAsync();
-            
+
             return Results.Ok(new { message = "Assinatura removida com sucesso" });
         }
         catch (Exception ex)

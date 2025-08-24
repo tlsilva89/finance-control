@@ -184,25 +184,20 @@ const formatCurrency = (value: number) => {
 };
 
 const generateReport = async () => {
-  if (!startDate.value || !endDate.value) {
-    return;
-  }
+  if (!startDate.value || !endDate.value) return;
   loading.value = true;
   report.value = null;
   const result = await financeStore.fetchFinancialReport(
     startDate.value,
     endDate.value
   );
-  if (result) {
-    report.value = result;
-  }
+  if (result) report.value = result;
   loading.value = false;
 };
 
 const exportPDF = () => {
-  if (report.value) {
+  if (report.value)
     exportReportAsPDF(report.value, startDate.value, endDate.value);
-  }
 };
 
 const reportSections = computed(() => {
@@ -233,7 +228,7 @@ const reportSections = computed(() => {
       items: report.value.subscriptions.map((s: Subscription) => ({
         id: s.id,
         amount: s.amount,
-        date: s.renewalDate,
+        date: `Dia ${s.dueDate}`,
         description: s.name,
       })),
       color: "text-purple-400",

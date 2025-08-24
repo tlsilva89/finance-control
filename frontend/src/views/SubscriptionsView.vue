@@ -199,8 +199,8 @@
                   {{ subscription.name }}
                 </h3>
                 <p class="text-sm text-gray-400">
-                  {{ subscription.category }} • Renova em
-                  {{ displayDate(subscription.renewalDate) }}
+                  {{ subscription.category }} • Renova em Dia
+                  {{ subscription.dueDate }}
                 </p>
               </div>
             </div>
@@ -262,7 +262,6 @@
 import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { useFinanceStore } from "../stores/finance";
 import { useDateReferenceStore } from "../stores/dateReference";
-import { useDateFormat } from "../composables/useDateFormat";
 import AppLayout from "../components/Layout/AppLayout.vue";
 import Button from "../components/UI/Button.vue";
 import SubscriptionModal from "../components/UI/SubscriptionModal.vue";
@@ -289,7 +288,7 @@ interface Subscription {
   id: string;
   name: string;
   amount: number;
-  renewalDate: string;
+  dueDate: number;
   category: string;
   monthReference: string;
   createdAt: string;
@@ -297,7 +296,6 @@ interface Subscription {
 
 const financeStore = useFinanceStore();
 const dateStore = useDateReferenceStore();
-const { displayDate } = useDateFormat();
 
 const loading = ref(false);
 const modalOpen = ref(false);

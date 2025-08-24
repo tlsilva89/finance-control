@@ -141,7 +141,7 @@
           </div>
 
           <div
-            class="group relative overflow-hidden bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 rounded-xl p-4 hover:from-purple-500/15 hover:to-purple-600/10 transition-all duration-300 cursor-pointer"
+            class="group relative overflow-hidden bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 rounded-xl p-4 hover:from-purple-500/15 hover:to-purple-600/10 transition-all duração-300 cursor-pointer"
             @click="navigateTo('/subscriptions')"
           >
             <div class="flex items-center justify-between">
@@ -502,12 +502,7 @@ const monthlyData = computed(() => {
     (financeStore.totalSubscriptions || 0) +
     (financeStore.totalServices || 0);
   const balance = totalIncome - totalExpenses;
-
-  return {
-    totalIncome,
-    totalExpenses,
-    balance,
-  };
+  return { totalIncome, totalExpenses, balance };
 });
 
 const usagePercentage = computed(() => {
@@ -516,9 +511,7 @@ const usagePercentage = computed(() => {
   return (used / total) * 100;
 });
 
-const hasExpenseData = computed(() => {
-  return monthlyData.value.totalExpenses > 0;
-});
+const hasExpenseData = computed(() => monthlyData.value.totalExpenses > 0);
 
 const hasHistoricalData = computed(() => {
   const months = getHistoricalMonthsWithRealData();
@@ -529,7 +522,6 @@ const pieChartData = computed(() => {
   const creditCardDebt = financeStore.totalCreditCardDebt || 0;
   const subscriptions = financeStore.totalSubscriptions || 0;
   const services = financeStore.totalServices || 0;
-
   const hasRealData = creditCardDebt > 0 || subscriptions > 0 || services > 0;
 
   if (!hasRealData) {
@@ -573,10 +565,7 @@ const pieChartOptions = {
         color: "#e5e7eb",
         padding: 20,
         usePointStyle: true,
-        font: {
-          size: 12,
-          family: "Inter, sans-serif",
-        },
+        font: { size: 12, family: "Inter, sans-serif" },
       },
     },
     tooltip: {
@@ -607,31 +596,21 @@ const pieChartOptions = {
     duration: 1500,
     easing: "easeOutQuart",
   },
-  interaction: {
-    intersect: false,
-    mode: "index",
-  },
+  interaction: { intersect: false, mode: "index" },
 };
 
 const barChartData = computed(() => {
   const monthsWithData = getHistoricalMonthsWithRealData();
+  if (monthsWithData.length === 0) return { labels: [], datasets: [] };
 
-  if (monthsWithData.length === 0) {
-    return {
-      labels: [],
-      datasets: [],
-    };
-  }
-
-  const datasets = [];
-
+  const datasets: any[] = [];
   if (
     selectedExpenseType.value === "all" ||
     selectedExpenseType.value === "cards"
   ) {
     datasets.push({
       label: "Cartões de Crédito",
-      data: monthsWithData.map((month) => month.cards),
+      data: monthsWithData.map((m) => m.cards),
       backgroundColor: "#ef4444",
       borderColor: "#dc2626",
       borderWidth: 2,
@@ -639,14 +618,13 @@ const barChartData = computed(() => {
       borderSkipped: false,
     });
   }
-
   if (
     selectedExpenseType.value === "all" ||
     selectedExpenseType.value === "subscriptions"
   ) {
     datasets.push({
       label: "Assinaturas",
-      data: monthsWithData.map((month) => month.subscriptions),
+      data: monthsWithData.map((m) => m.subscriptions),
       backgroundColor: "#8b5cf6",
       borderColor: "#7c3aed",
       borderWidth: 2,
@@ -654,14 +632,13 @@ const barChartData = computed(() => {
       borderSkipped: false,
     });
   }
-
   if (
     selectedExpenseType.value === "all" ||
     selectedExpenseType.value === "services"
   ) {
     datasets.push({
       label: "Serviços",
-      data: monthsWithData.map((month) => month.services),
+      data: monthsWithData.map((m) => m.services),
       backgroundColor: "#3b82f6",
       borderColor: "#2563eb",
       borderWidth: 2,
@@ -669,11 +646,7 @@ const barChartData = computed(() => {
       borderSkipped: false,
     });
   }
-
-  return {
-    labels: monthsWithData.map((month) => month.label),
-    datasets,
-  };
+  return { labels: monthsWithData.map((m) => m.label), datasets };
 });
 
 const barChartOptions = {
@@ -686,10 +659,7 @@ const barChartOptions = {
         color: "#e5e7eb",
         usePointStyle: true,
         padding: 20,
-        font: {
-          size: 12,
-          family: "Inter, sans-serif",
-        },
+        font: { size: 12, family: "Inter, sans-serif" },
       },
     },
     tooltip: {
@@ -712,56 +682,32 @@ const barChartOptions = {
     x: {
       ticks: {
         color: "#9ca3af",
-        font: {
-          size: 11,
-          family: "Inter, sans-serif",
-        },
+        font: { size: 11, family: "Inter, sans-serif" },
       },
-      grid: {
-        color: "#374151",
-        drawBorder: false,
-      },
+      grid: { color: "#374151", drawBorder: false },
     },
     y: {
       ticks: {
         color: "#9ca3af",
-        font: {
-          size: 11,
-          family: "Inter, sans-serif",
-        },
+        font: { size: 11, family: "Inter, sans-serif" },
         callback: function (value: any) {
           return formatCurrency(value);
         },
       },
-      grid: {
-        color: "#374151",
-        drawBorder: false,
-      },
+      grid: { color: "#374151", drawBorder: false },
       beginAtZero: true,
     },
   },
-  animation: {
-    duration: 1000,
-    easing: "easeOutQuart",
-  },
-  interaction: {
-    intersect: false,
-    mode: "index",
-  },
-  elements: {
-    bar: {
-      borderRadius: 4,
-    },
-  },
+  animation: { duration: 1000, easing: "easeOutQuart" },
+  interaction: { intersect: false, mode: "index" },
+  elements: { bar: { borderRadius: 4 } },
 };
 
-const expenseTrend = computed(() => {
-  return {
-    icon: ArrowTrendingUpIcon,
-    color: "text-gray-400",
-    text: "Histórico sendo construído conforme novos dados são adicionados",
-  };
-});
+const expenseTrend = computed(() => ({
+  icon: ArrowTrendingUpIcon,
+  color: "text-gray-400",
+  text: "Histórico sendo construído conforme novos dados são adicionados",
+}));
 
 const recentTransactions = computed((): Transaction[] => {
   return (
@@ -776,11 +722,11 @@ const recentTransactions = computed((): Transaction[] => {
 
 const upcomingPayments = computed((): UpcomingPayment[] => {
   const upcoming: UpcomingPayment[] = [];
+  const todayDay = new Date().getDate();
 
   if (financeStore.currentMonthCreditCards) {
-    const today = new Date().getDate();
     financeStore.currentMonthCreditCards.forEach((card) => {
-      const daysUntilDue = card.dueDate - today;
+      const daysUntilDue = card.dueDate - todayDay;
       if (daysUntilDue >= 0 && daysUntilDue <= 15) {
         upcoming.push({
           id: card.id,
@@ -795,12 +741,8 @@ const upcomingPayments = computed((): UpcomingPayment[] => {
   }
 
   if (financeStore.currentMonthSubscriptions) {
-    financeStore.currentMonthSubscriptions.forEach((subscription) => {
-      const renewalDate = new Date(subscription.renewalDate);
-      const today = new Date();
-      const diffTime = renewalDate.getTime() - today.getTime();
-      const daysUntilDue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
+    financeStore.currentMonthSubscriptions.forEach((subscription: any) => {
+      const daysUntilDue = subscription.dueDate - todayDay;
       if (daysUntilDue >= 0 && daysUntilDue <= 15) {
         upcoming.push({
           id: subscription.id,
@@ -815,9 +757,8 @@ const upcomingPayments = computed((): UpcomingPayment[] => {
   }
 
   if (financeStore.currentMonthServices) {
-    const today = new Date().getDate();
     financeStore.currentMonthServices.forEach((service) => {
-      const daysUntilDue = service.dueDate - today;
+      const daysUntilDue = service.dueDate - todayDay;
       if (daysUntilDue >= 0 && daysUntilDue <= 15) {
         upcoming.push({
           id: service.id,
@@ -835,7 +776,12 @@ const upcomingPayments = computed((): UpcomingPayment[] => {
 });
 
 const getHistoricalMonthsWithRealData = () => {
-  const months = [];
+  const months: Array<{
+    label: string;
+    cards: number;
+    subscriptions: number;
+    services: number;
+  }> = [];
 
   if (
     financeStore.totalCreditCardDebt > 0 ||
@@ -843,9 +789,9 @@ const getHistoricalMonthsWithRealData = () => {
     financeStore.totalServices > 0
   ) {
     months.push({
-      label: new Intl.DateTimeFormat("pt-BR", {
-        month: "short",
-      }).format(new Date()),
+      label: new Intl.DateTimeFormat("pt-BR", { month: "short" }).format(
+        new Date()
+      ),
       cards: financeStore.totalCreditCardDebt || 0,
       subscriptions: financeStore.totalSubscriptions || 0,
       services: financeStore.totalServices || 0,

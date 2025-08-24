@@ -34,18 +34,29 @@ public static class ReportEndpoints
             .ToListAsync();
 
         var subscriptions = await context.Subscriptions
-            .Where(s => s.UserId == userId && s.RenewalDate >= startDate && s.RenewalDate <= endDate)
+            .Where(s => s.UserId == userId)
             .ToListAsync();
 
         var services = await context.Services
-            .Where(s => s.UserId == userId && s.DueDate >= startDate.Day && s.DueDate <= endDate.Day)
+            .Where(s => s.UserId == userId)
             .ToListAsync();
+
+        var filteredSubscriptions = subscriptions
+            .Where(s => s.DueDate >= startDate.Day && s.DueDate <= endDate.Day
+                && string.Compare(s.MonthReference, $"{startDate:yyyy-MM}") >= 0
+                && string.Compare(s.MonthReference, $"{endDate:yyyy-MM}") <= 0)
+            .ToList();
+
+        var filteredServices = services
+            .Where(s => s.DueDate >= startDate.Day && s.DueDate <= endDate.Day
+                && string.Compare(s.MonthReference, $"{startDate:yyyy-MM}") >= 0
+                && string.Compare(s.MonthReference, $"{endDate:yyyy-MM}") <= 0)
+            .ToList();
 
         var totalIncomes = incomes.Sum(i => i.Amount);
         var totalCardExpenses = creditCardExpenses.Sum(e => e.InstallmentAmount);
-        var totalSubscriptions = subscriptions.Sum(s => s.Amount);
-        var totalServices = services.Sum(s => s.Amount);
-
+        var totalSubscriptions = filteredSubscriptions.Sum(s => s.Amount);
+        var totalServices = filteredServices.Sum(s => s.Amount);
         var totalExpenses = totalCardExpenses + totalSubscriptions + totalServices;
 
         var report = new FinancialReport
@@ -57,8 +68,8 @@ public static class ReportEndpoints
             Balance = totalIncomes - totalExpenses,
             Incomes = incomes,
             CreditCardExpenses = creditCardExpenses,
-            Subscriptions = subscriptions,
-            Services = services
+            Subscriptions = filteredSubscriptions,
+            Services = filteredServices
         };
 
         return Results.Ok(report);
