@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using FinanceControl.Api.Data;
 using FinanceControl.Api.Services;
 using FinanceControl.Api.Endpoints;
+using Npgsql; 
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -78,10 +79,35 @@ SubscriptionsEndpoints.Map(app);
 ServicesEndpoints.Map(app);
 
 
-using (var scope = app.Services.CreateScope())
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+var maxRetries = 10;
+var delay = TimeSpan.FromSeconds(5);
+
+for (var i = 1; i <= maxRetries; i++)
 {
-    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    context.Database.Migrate();
+    try
+    {
+        using (var scope = app.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            logger.LogInformation("A tentar ligar à base de dados e aplicar migrações... (Tentativa {i}/{maxRetries})", i, maxRetries);
+            context.Database.Migrate();
+            logger.LogInformation("Migração da base de dados bem-sucedida.");
+            break; 
+        }
+    }
+    catch (NpgsqlException ex)
+    {
+        logger.LogWarning(ex, "Não foi possível ligar à base de dados. Nova tentativa em {delay} segundos...", delay.TotalSeconds);
+        if (i == maxRetries)
+        {
+            logger.LogError("Número máximo de tentativas atingido. Não foi possível ligar à base de dados.");
+            throw; 
+        }
+        await Task.Delay(delay); 
+    }
 }
+
+
 
 app.Run();

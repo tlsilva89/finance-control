@@ -128,35 +128,32 @@ public static class CreditCardExpensesEndpoints
         {
             var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
-            var allExpenses = await context.CreditCardExpenses
-                .Where(e => e.UserId == userId && e.CreditCardId == cardId && !e.IsPaid)
-                .OrderBy(e => e.PurchaseDate)
-                .ToListAsync();
-
+            var query = context.CreditCardExpenses
+                .Where(e => e.UserId == userId && e.CreditCardId == cardId && !e.IsPaid);
+            
             if (string.IsNullOrEmpty(periodMonth))
             {
+                var allExpenses = await query.OrderBy(e => e.PurchaseDate).ToListAsync();
                 return Results.Ok(allExpenses);
             }
 
             if (DateTime.TryParseExact(periodMonth, "yyyy-MM", null, System.Globalization.DateTimeStyles.None, out var targetPeriod))
             {
-                var activeInPeriod = new List<CreditCardExpense>();
+                // CORREÇÃO: A lógica foi simplificada para filtrar diretamente pelo mês da PurchaseDate.
+                // A PurchaseDate de uma parcela já representa o mês de vencimento daquela parcela.
+                var startDate = new DateTime(targetPeriod.Year, targetPeriod.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+                var endDate = startDate.AddMonths(1).AddTicks(-1);
 
-                foreach (var expense in allExpenses)
-                {
-                    var installmentDate = expense.PurchaseDate.AddMonths(expense.CurrentInstallment - 1);
-                    
-                    if (installmentDate.Year == targetPeriod.Year && 
-                        installmentDate.Month == targetPeriod.Month)
-                    {
-                        activeInPeriod.Add(expense);
-                    }
-                }
+                var activeInPeriod = await query
+                    .Where(e => e.PurchaseDate >= startDate && e.PurchaseDate <= endDate)
+                    .OrderBy(e => e.PurchaseDate)
+                    .ToListAsync();
 
                 return Results.Ok(activeInPeriod);
             }
 
-            return Results.Ok(allExpenses);
+            var defaultExpenses = await query.OrderBy(e => e.PurchaseDate).ToListAsync();
+            return Results.Ok(defaultExpenses);
         }
         catch (Exception ex)
         {
