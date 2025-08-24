@@ -1,9 +1,7 @@
 export const formatDateForAPI = (date: Date | string | null): string | null => {
   if (!date) return null;
-
   try {
     let dateString: string;
-
     if (typeof date === "string") {
       if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
         return date;
@@ -20,11 +18,9 @@ export const formatDateForAPI = (date: Date | string | null): string | null => {
       const day = String(date.getDate()).padStart(2, "0");
       dateString = `${year}-${month}-${day}`;
     }
-
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
       return dateString;
     }
-
     return null;
   } catch {
     return null;
@@ -33,17 +29,14 @@ export const formatDateForAPI = (date: Date | string | null): string | null => {
 
 export const formatDateFromAPI = (dateString: string | null): Date | null => {
   if (!dateString) return null;
-
   try {
     let datePart = dateString;
     if (dateString.includes("T")) {
       datePart = dateString.split("T")[0];
     }
-
     if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
       return null;
     }
-
     const [year, month, day] = datePart.split("-").map(Number);
     return new Date(year, month - 1, day);
   } catch {
@@ -53,7 +46,6 @@ export const formatDateFromAPI = (dateString: string | null): Date | null => {
 
 export const dateToInputValue = (date: Date | string | null): string => {
   if (!date) return "";
-
   try {
     if (typeof date === "string") {
       const datePart = date.split("T")[0];
@@ -64,11 +56,9 @@ export const dateToInputValue = (date: Date | string | null): string => {
       if (!dateObj) return "";
       date = dateObj;
     }
-
     const year = (date as Date).getFullYear();
     const month = String((date as Date).getMonth() + 1).padStart(2, "0");
     const day = String((date as Date).getDate()).padStart(2, "0");
-
     return `${year}-${month}-${day}`;
   } catch {
     return "";
@@ -81,28 +71,19 @@ export const getCurrentDateForInput = (): string => {
 
 export const formatDateForDisplay = (date: Date | string | null): string => {
   if (!date) return "";
-
   try {
     let dateObj: Date | null = null;
-
     if (typeof date === "string") {
-      const datePart = date.split("T")[0];
-      if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
-        const [year, month, day] = datePart.split("-").map(Number);
-        dateObj = new Date(year, month - 1, day);
-      } else {
-        dateObj = formatDateFromAPI(date);
-      }
+      dateObj = new Date(date);
     } else {
       dateObj = date;
     }
-
-    if (!dateObj) return "";
-
+    if (!dateObj || isNaN(dateObj.getTime())) return "";
     return new Intl.DateTimeFormat("pt-BR", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
+      timeZone: "UTC",
     }).format(dateObj);
   } catch {
     return "";
@@ -111,27 +92,18 @@ export const formatDateForDisplay = (date: Date | string | null): string => {
 
 export const formatDateShort = (date: Date | string | null): string => {
   if (!date) return "";
-
   try {
     let dateObj: Date | null = null;
-
     if (typeof date === "string") {
-      const datePart = date.split("T")[0];
-      if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
-        const [year, month, day] = datePart.split("-").map(Number);
-        dateObj = new Date(year, month - 1, day);
-      } else {
-        dateObj = formatDateFromAPI(date);
-      }
+      dateObj = new Date(date);
     } else {
       dateObj = date;
     }
-
-    if (!dateObj) return "";
-
+    if (!dateObj || isNaN(dateObj.getTime())) return "";
     return new Intl.DateTimeFormat("pt-BR", {
       day: "2-digit",
       month: "2-digit",
+      timeZone: "UTC",
     }).format(dateObj);
   } catch {
     return "";
@@ -142,7 +114,7 @@ export const addDays = (date: Date | string, days: number): Date => {
   const dateObj =
     typeof date === "string" ? formatDateFromAPI(date) || new Date() : date;
   const result = new Date(dateObj);
-  result.setDate(result.getDate() + days);
+  result.setUTCDate(result.getUTCDate() + days);
   return result;
 };
 
@@ -150,34 +122,27 @@ export const addMonths = (date: Date | string, months: number): Date => {
   const dateObj =
     typeof date === "string" ? formatDateFromAPI(date) || new Date() : date;
   const result = new Date(dateObj);
-  result.setMonth(result.getMonth() + months);
+  result.setUTCMonth(result.getUTCMonth() + months);
   return result;
 };
 
 export const isDateInPast = (date: Date | string | null): boolean => {
   if (!date) return false;
-
   const dateObj = typeof date === "string" ? formatDateFromAPI(date) : date;
   if (!dateObj) return false;
-
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
+  today.setUTCHours(0, 0, 0, 0);
   const compareDate = new Date(dateObj);
-  compareDate.setHours(0, 0, 0, 0);
-
+  compareDate.setUTCHours(0, 0, 0, 0);
   return compareDate < today;
 };
 
 export const isDateInFuture = (date: Date | string | null): boolean => {
   if (!date) return false;
-
   const dateObj = typeof date === "string" ? formatDateFromAPI(date) : date;
   if (!dateObj) return false;
-
   const today = new Date();
-  today.setHours(23, 59, 59, 999);
-
+  today.setUTCHours(23, 59, 59, 999);
   return dateObj > today;
 };
 
@@ -189,7 +154,6 @@ export const daysDifference = (
     typeof date1 === "string" ? formatDateFromAPI(date1) || new Date() : date1;
   const d2 =
     typeof date2 === "string" ? formatDateFromAPI(date2) || new Date() : date2;
-
   const diffTime = d2.getTime() - d1.getTime();
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
@@ -197,19 +161,21 @@ export const daysDifference = (
 export const getFirstDayOfMonth = (date: Date | string = new Date()): Date => {
   const dateObj =
     typeof date === "string" ? formatDateFromAPI(date) || new Date() : date;
-  return new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
+  return new Date(Date.UTC(dateObj.getUTCFullYear(), dateObj.getUTCMonth(), 1));
 };
 
 export const getLastDayOfMonth = (date: Date | string = new Date()): Date => {
   const dateObj =
     typeof date === "string" ? formatDateFromAPI(date) || new Date() : date;
-  return new Date(dateObj.getFullYear(), dateObj.getMonth() + 1, 0);
+  return new Date(
+    Date.UTC(dateObj.getUTCFullYear(), dateObj.getUTCMonth() + 1, 0)
+  );
 };
 
 export const getMonthReference = (date: Date | string = new Date()): string => {
   const dateObj =
     typeof date === "string" ? formatDateFromAPI(date) || new Date() : date;
-  const year = dateObj.getFullYear();
-  const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const year = dateObj.getUTCFullYear();
+  const month = String(dateObj.getUTCMonth() + 1).padStart(2, "0");
   return `${year}-${month}`;
 };

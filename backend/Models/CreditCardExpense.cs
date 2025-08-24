@@ -32,9 +32,9 @@ public class CreditCardExpense
     
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
-    public int CreditCardId { get; set; }  // Era Guid
+    public int CreditCardId { get; set; } 
     public CreditCard CreditCard { get; set; } = null!;
     
-    public int UserId { get; set; }  // Era Guid
+    public int UserId { get; set; } 
     public User User { get; set; } = null!;
 }

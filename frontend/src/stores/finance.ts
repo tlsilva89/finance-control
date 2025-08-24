@@ -26,7 +26,7 @@ export interface CreditCard {
   currentDebt: number;
   totalConsumption: number;
   dueDate: number;
-  monthReference: string;
+  closingDay: number;
   createdAt: string;
   expenses?: CreditCardExpense[];
 }
@@ -297,17 +297,8 @@ export const useFinanceStore = defineStore("finance", {
       >
     ) {
       const { success, error } = useNotification();
-      const dateStore = useDateReferenceStore();
       try {
-        const creditCardWithMonth = {
-          ...creditCard,
-          monthReference:
-            creditCard.monthReference || dateStore.monthYearString,
-        };
-        const response = await api.post(
-          "/api/credit-cards",
-          creditCardWithMonth
-        );
+        const response = await api.post("/api/credit-cards", creditCard);
         if (!Array.isArray(this.creditCards)) this.creditCards = [];
         this.creditCards.unshift(response.data);
         success("Cartão adicionado com sucesso!");
@@ -319,17 +310,8 @@ export const useFinanceStore = defineStore("finance", {
 
     async updateCreditCard(id: string, creditCard: Partial<CreditCard>) {
       const { success, error } = useNotification();
-      const dateStore = useDateReferenceStore();
       try {
-        const creditCardToUpdate = {
-          ...creditCard,
-          monthReference:
-            creditCard.monthReference || dateStore.monthYearString,
-        };
-        const response = await api.put(
-          `/api/credit-cards/${id}`,
-          creditCardToUpdate
-        );
+        const response = await api.put(`/api/credit-cards/${id}`, creditCard);
         if (!Array.isArray(this.creditCards)) this.creditCards = [];
         const index = this.creditCards.findIndex((c) => c.id === id);
         if (index !== -1) {

@@ -184,6 +184,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { type CreditCardExpense } from "../../stores/finance";
+import { useDateFormat } from "../../composables/useDateFormat";
 import {
   PlusIcon,
   DocumentTextIcon,
@@ -225,6 +226,8 @@ const emit = defineEmits<{
   "toggle-paid": [expense: CreditCardExpense];
 }>();
 
+const { displayDate: formatDate } = useDateFormat();
+
 const filterCategory = ref("");
 
 const filteredExpenses = computed(() => {
@@ -257,10 +260,6 @@ const formatCurrency = (value: number) => {
     style: "currency",
     currency: "BRL",
   }).format(value);
-};
-
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString("pt-BR");
 };
 
 const getCategoryColor = (category: string) => {

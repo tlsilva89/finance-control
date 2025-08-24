@@ -56,21 +56,40 @@
         </div>
       </div>
 
-      <div>
-        <label
-          for="dueDate"
-          class="block text-sm font-medium text-gray-300 mb-2"
-        >
-          Dia do Vencimento
-        </label>
-        <select
-          id="dueDate"
-          v-model="form.dueDate"
-          class="bg-dark-800 border border-dark-700 text-gray-100 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 w-full"
-          required
-        >
-          <option v-for="day in 31" :key="day" :value="day">{{ day }}</option>
-        </select>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label
+            for="closingDay"
+            class="block text-sm font-medium text-gray-300 mb-2"
+          >
+            Dia de Fechamento
+          </label>
+          <select
+            id="closingDay"
+            v-model="form.closingDay"
+            class="bg-dark-800 border border-dark-700 text-gray-100 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 w-full"
+            required
+          >
+            <option v-for="day in 31" :key="day" :value="day">{{ day }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label
+            for="dueDate"
+            class="block text-sm font-medium text-gray-300 mb-2"
+          >
+            Dia do Vencimento
+          </label>
+          <select
+            id="dueDate"
+            v-model="form.dueDate"
+            class="bg-dark-800 border border-dark-700 text-gray-100 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 w-full"
+            required
+          >
+            <option v-for="day in 31" :key="day" :value="day">{{ day }}</option>
+          </select>
+        </div>
       </div>
 
       <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
@@ -120,13 +139,13 @@ import {
   InformationCircleIcon,
 } from "@heroicons/vue/24/outline";
 import SimpleModal from "./SimpleModal.vue";
-import { useDateReferenceStore } from "../../stores/dateReference";
 
 interface CreditCard {
   id?: string;
   name: string;
   limit: number;
   dueDate: number;
+  closingDay: number; // Adicionado
 }
 
 interface Props {
@@ -135,14 +154,12 @@ interface Props {
 }
 
 const props = defineProps<Props>();
-const dateStore = useDateReferenceStore();
 
 const emit = defineEmits<{
   close: [];
   submit: [
     creditCard: Omit<CreditCard, "id"> & {
       id?: string;
-      monthReference?: string;
     }
   ];
 }>();
@@ -154,12 +171,14 @@ const form = reactive({
   name: "",
   limit: 0,
   dueDate: 1,
+  closingDay: 1, // Adicionado
 });
 
 const resetForm = () => {
   form.name = "";
   form.limit = 0;
   form.dueDate = 1;
+  form.closingDay = 1; // Adicionado
   isEditing.value = false;
 };
 
@@ -171,7 +190,7 @@ const handleSubmit = async () => {
       ...form,
       limit: Number(form.limit),
       dueDate: Number(form.dueDate),
-      monthReference: dateStore.monthYearString,
+      closingDay: Number(form.closingDay), // Adicionado
     };
 
     if (isEditing.value && props.creditCard?.id) {
@@ -194,6 +213,7 @@ watch(
       form.name = props.creditCard.name;
       form.limit = props.creditCard.limit;
       form.dueDate = props.creditCard.dueDate;
+      form.closingDay = props.creditCard.closingDay; // Adicionado
       isEditing.value = true;
     } else if (newValue) {
       resetForm();

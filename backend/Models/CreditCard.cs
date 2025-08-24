@@ -7,7 +7,7 @@ public class CreditCard
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public int Id { get; set; }  // Era Guid
+    public int Id { get; set; }
 
     [Required]
     [StringLength(100)]
@@ -23,15 +23,14 @@ public class CreditCard
     public decimal TotalConsumption { get; set; }
 
     [Range(1, 31)]
-    public int DueDate { get; set; }
+    public int DueDate { get; set; } // Dia do Vencimento
 
-    [Required]
-    [StringLength(7)]
-    public string MonthReference { get; set; } = string.Empty;
+    [Range(1, 31)]
+    public int ClosingDay { get; set; } // Novo: Dia do Fechamento
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public int UserId { get; set; } 
+    public int UserId { get; set; }
     public User User { get; set; } = null!;
 
     public ICollection<CreditCardExpense> Expenses { get; set; } = new List<CreditCardExpense>();

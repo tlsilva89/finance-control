@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using FinanceControl.Api.Data;
 using FinanceControl.Api.Models;
+using FinanceControl.Api.Utils;
 
 namespace FinanceControl.Api.Endpoints;
 
@@ -45,38 +46,30 @@ public static class CreditCardsEndpoints
                 .OrderBy(c => c.Name)
                 .ToListAsync();
 
-            DateTime startDate, endDate;
-            if (!string.IsNullOrEmpty(monthReference) &&
-                DateTime.TryParseExact(monthReference, "yyyy-MM", null, System.Globalization.DateTimeStyles.None, out var date))
+            DateTime referenceDate;
+            if (!string.IsNullOrEmpty(monthReference) && DateTime.TryParseExact(monthReference, "yyyy-MM", null, System.Globalization.DateTimeStyles.None, out var parsedDate))
             {
-                startDate = EnsureUtc(new DateTime(date.Year, date.Month, 1));
-                endDate = EnsureUtc(startDate.AddMonths(1).AddDays(-1));
+                referenceDate = new DateTime(parsedDate.Year, parsedDate.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             }
             else
             {
-                var now = DateTime.UtcNow;
-                startDate = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-                endDate = startDate.AddMonths(1).AddDays(-1);
+                referenceDate = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             }
 
             foreach (var card in creditCards)
             {
+                var (startDate, endDate) = InvoiceCycleCalculator.GetInvoicePeriod(card.ClosingDay, referenceDate);
+
                 var monthDebt = await context.CreditCardExpenses
                     .Where(e => e.CreditCardId == card.Id &&
-                        e.PurchaseDate >= startDate &&
-                        e.PurchaseDate <= endDate &&
-                        !e.IsPaid)
-                    .SumAsync(e => e.InstallmentAmount);
-
-                var futureExpenses = await context.CreditCardExpenses
-                    .Where(e => e.CreditCardId == card.Id &&
                                 !e.IsPaid &&
-                                e.PurchaseDate >= startDate)
-                    .GroupBy(e => new { e.Description, e.Amount, e.Installments })
-                    .Select(g => g.Sum(e => e.InstallmentAmount))
-                    .ToListAsync();
-
-                var totalConsumption = futureExpenses.Sum();
+                                e.PurchaseDate >= startDate &&
+                                e.PurchaseDate <= endDate)
+                    .SumAsync(e => e.InstallmentAmount);
+                
+                var totalConsumption = await context.CreditCardExpenses
+                    .Where(e => e.CreditCardId == card.Id && !e.IsPaid)
+                    .SumAsync(e => e.InstallmentAmount);
 
                 card.CurrentDebt = monthDebt;
                 card.TotalConsumption = totalConsumption;
@@ -106,28 +99,21 @@ public static class CreditCardsEndpoints
                 return Results.NotFound(new { error = "Cartão não encontrado" });
             }
 
-            var now = DateTime.UtcNow;
-            var startDate = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-            var endDate = startDate.AddMonths(1).AddDays(-1);
+            var referenceDate = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var (startDate, endDate) = InvoiceCycleCalculator.GetInvoicePeriod(creditCard.ClosingDay, referenceDate);
 
-            var totalDebt = await context.CreditCardExpenses
-                .Where(e => e.CreditCardId == id &&
-                            e.PurchaseDate >= startDate &&
-                            e.PurchaseDate <= endDate &&
-                            !e.IsPaid)
-                .SumAsync(e => e.InstallmentAmount);
-
-            var futureExpenses = await context.CreditCardExpenses
+            var currentDebt = await context.CreditCardExpenses
                 .Where(e => e.CreditCardId == id &&
                             !e.IsPaid &&
-                            e.PurchaseDate >= startDate)
-                .GroupBy(e => new { e.Description, e.Amount, e.Installments })
-                .Select(g => g.Sum(e => e.InstallmentAmount))
-                .ToListAsync();
+                            e.PurchaseDate >= startDate &&
+                            e.PurchaseDate <= endDate)
+                .SumAsync(e => e.InstallmentAmount);
+            
+            var totalConsumption = await context.CreditCardExpenses
+                .Where(e => e.CreditCardId == id && !e.IsPaid)
+                .SumAsync(e => e.InstallmentAmount);
 
-            var totalConsumption = futureExpenses.Sum();
-
-            creditCard.CurrentDebt = totalDebt;
+            creditCard.CurrentDebt = currentDebt;
             creditCard.TotalConsumption = totalConsumption;
 
             return Results.Ok(creditCard);
@@ -147,22 +133,20 @@ public static class CreditCardsEndpoints
         {
             if (string.IsNullOrWhiteSpace(creditCard.Name))
                 return Results.BadRequest(new { error = "Nome do cartão é obrigatório" });
-                
+            
             if (creditCard.Limit <= 0)
                 return Results.BadRequest(new { error = "Limite deve ser maior que zero" });
-                
+            
             if (creditCard.DueDate < 1 || creditCard.DueDate > 31)
                 return Results.BadRequest(new { error = "Data de vencimento deve estar entre 1 e 31" });
+
+            if (creditCard.ClosingDay < 1 || creditCard.ClosingDay > 31)
+                return Results.BadRequest(new { error = "Dia de fechamento deve estar entre 1 e 31" });
 
             var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             creditCard.UserId = userId;
             creditCard.CreatedAt = DateTime.UtcNow;
             creditCard.CurrentDebt = 0;
-
-            if (string.IsNullOrEmpty(creditCard.MonthReference))
-            {
-                creditCard.MonthReference = DateTime.UtcNow.ToString("yyyy-MM");
-            }
 
             context.CreditCards.Add(creditCard);
             await context.SaveChangesAsync();
@@ -185,12 +169,15 @@ public static class CreditCardsEndpoints
         {
             if (string.IsNullOrWhiteSpace(updatedCreditCard.Name))
                 return Results.BadRequest(new { error = "Nome do cartão é obrigatório" });
-                
+            
             if (updatedCreditCard.Limit <= 0)
                 return Results.BadRequest(new { error = "Limite deve ser maior que zero" });
-                
+            
             if (updatedCreditCard.DueDate < 1 || updatedCreditCard.DueDate > 31)
                 return Results.BadRequest(new { error = "Data de vencimento deve estar entre 1 e 31" });
+            
+            if (updatedCreditCard.ClosingDay < 1 || updatedCreditCard.ClosingDay > 31)
+                return Results.BadRequest(new { error = "Dia de fechamento deve estar entre 1 e 31" });
 
             var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var creditCard = await context.CreditCards
@@ -204,34 +191,9 @@ public static class CreditCardsEndpoints
             creditCard.Name = updatedCreditCard.Name;
             creditCard.Limit = updatedCreditCard.Limit;
             creditCard.DueDate = updatedCreditCard.DueDate;
-            creditCard.MonthReference = updatedCreditCard.MonthReference;
+            creditCard.ClosingDay = updatedCreditCard.ClosingDay;
 
             await context.SaveChangesAsync();
-
-            var now = DateTime.UtcNow;
-            var startDate = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-            var endDate = startDate.AddMonths(1).AddDays(-1);
-
-            var totalDebt = await context.CreditCardExpenses
-                .Where(e => e.CreditCardId == id &&
-                            e.PurchaseDate >= startDate &&
-                            e.PurchaseDate <= endDate &&
-                            !e.IsPaid)
-                .SumAsync(e => e.InstallmentAmount);
-
-            var futureExpenses = await context.CreditCardExpenses
-                .Where(e => e.CreditCardId == id &&
-                            !e.IsPaid &&
-                            e.PurchaseDate >= startDate)
-                .GroupBy(e => new { e.Description, e.Amount, e.Installments })
-                .Select(g => g.Sum(e => e.InstallmentAmount))
-                .ToListAsync();
-
-            var totalConsumption = futureExpenses.Sum();
-
-            creditCard.CurrentDebt = totalDebt;
-            creditCard.TotalConsumption = totalConsumption;
-
             return Results.Ok(creditCard);
         }
         catch (Exception ex)
