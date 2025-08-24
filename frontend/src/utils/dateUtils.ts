@@ -35,15 +35,16 @@ export const formatDateFromAPI = (dateString: string | null): Date | null => {
   if (!dateString) return null;
 
   try {
+    let datePart = dateString;
     if (dateString.includes("T")) {
-      dateString = dateString.split("T")[0];
+      datePart = dateString.split("T")[0];
     }
 
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
       return null;
     }
 
-    const [year, month, day] = dateString.split("-").map(Number);
+    const [year, month, day] = datePart.split("-").map(Number);
     return new Date(year, month - 1, day);
   } catch {
     return null;
@@ -55,8 +56,9 @@ export const dateToInputValue = (date: Date | string | null): string => {
 
   try {
     if (typeof date === "string") {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        return date;
+      const datePart = date.split("T")[0];
+      if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+        return datePart;
       }
       const dateObj = formatDateFromAPI(date);
       if (!dateObj) return "";
@@ -81,10 +83,16 @@ export const formatDateForDisplay = (date: Date | string | null): string => {
   if (!date) return "";
 
   try {
-    let dateObj: Date | null;
+    let dateObj: Date | null = null;
 
     if (typeof date === "string") {
-      dateObj = formatDateFromAPI(date);
+      const datePart = date.split("T")[0];
+      if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+        const [year, month, day] = datePart.split("-").map(Number);
+        dateObj = new Date(year, month - 1, day);
+      } else {
+        dateObj = formatDateFromAPI(date);
+      }
     } else {
       dateObj = date;
     }
@@ -105,10 +113,16 @@ export const formatDateShort = (date: Date | string | null): string => {
   if (!date) return "";
 
   try {
-    let dateObj: Date | null;
+    let dateObj: Date | null = null;
 
     if (typeof date === "string") {
-      dateObj = formatDateFromAPI(date);
+      const datePart = date.split("T")[0];
+      if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+        const [year, month, day] = datePart.split("-").map(Number);
+        dateObj = new Date(year, month - 1, day);
+      } else {
+        dateObj = formatDateFromAPI(date);
+      }
     } else {
       dateObj = date;
     }

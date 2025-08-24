@@ -16,6 +16,16 @@
           <option value="Casa">Casa</option>
           <option value="Vestuário">Vestuário</option>
           <option value="Tecnologia">Tecnologia</option>
+          <option value="Viagem">Viagem</option>
+          <option value="Beleza">Beleza</option>
+          <option value="Esporte">Esporte</option>
+          <option value="Pets">Pets</option>
+          <option value="Farmácia">Farmácia</option>
+          <option value="Combustível">Combustível</option>
+          <option value="Streaming">Streaming</option>
+          <option value="Restaurante">Restaurante</option>
+          <option value="Livros">Livros</option>
+          <option value="Serviços">Serviços</option>
           <option value="Outros">Outros</option>
         </select>
         <button
@@ -36,9 +46,9 @@
 
     <div v-else-if="filteredExpenses.length === 0" class="text-center py-8">
       <DocumentTextIcon class="mx-auto h-10 w-10 text-gray-400 mb-3" />
-      <p class="text-gray-400">Nenhum gasto encontrado</p>
+      <p class="text-gray-400">Nenhuma parcela ativa para este mês</p>
       <p class="text-xs text-gray-500 mt-1">
-        Adicione gastos para começar a controlar seus cartões
+        As parcelas de compras parceladas aparecerão no mês correspondente
       </p>
     </div>
 
@@ -53,7 +63,10 @@
             class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold"
             :class="getCategoryColor(expense.category)"
           >
-            {{ getCategoryIcon(expense.category) }}
+            <component
+              :is="getCategoryIcon(expense.category)"
+              class="w-4 h-4"
+            />
           </div>
           <div>
             <p class="font-medium text-gray-100 text-sm">
@@ -61,21 +74,17 @@
             </p>
             <div class="flex items-center space-x-2 text-xs text-gray-400">
               <span>{{ formatDate(expense.purchaseDate) }}</span>
-              <span v-if="expense.installments > 1"
-                >• {{ expense.currentInstallment || 1 }}/{{
+              <span v-if="expense.installments > 1">
+                • Parcela {{ expense.currentInstallment }}/{{
                   expense.installments
-                }}x</span
-              >
+                }}
+              </span>
               <span v-if="expense.category">• {{ expense.category }}</span>
-              <!-- Indicador visual se é compra parcelada já iniciada -->
               <span
-                v-if="
-                  expense.installments > 1 &&
-                  (expense.currentInstallment || 1) > 1
-                "
-                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800"
+                v-if="expense.installments > 1"
+                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
               >
-                Em andamento
+                📅 Parcela do mês
               </span>
             </div>
           </div>
@@ -92,16 +101,14 @@
             <p v-if="expense.installments > 1" class="text-xs text-gray-400">
               Total: {{ formatCurrency(expense.amount) }}
             </p>
-            <!-- Mostrar valor restante se parcelado -->
             <p
               v-if="
                 expense.installments > 1 &&
-                (expense.currentInstallment || 1) < expense.installments
+                expense.currentInstallment < expense.installments
               "
               class="text-xs text-blue-400"
             >
-              Restam:
-              {{ expense.installments - (expense.currentInstallment || 1) }}x
+              Restam: {{ expense.installments - expense.currentInstallment }}x
             </p>
           </div>
 
@@ -147,7 +154,13 @@
       class="mt-4 p-3 bg-dark-800 rounded-lg"
     >
       <div class="flex justify-between items-center text-sm">
-        <span class="text-gray-400">Total das parcelas atuais:</span>
+        <span class="text-gray-400">Parcelas do mês atual:</span>
+        <span class="font-semibold text-gray-100">{{
+          filteredExpenses.length
+        }}</span>
+      </div>
+      <div class="flex justify-between items-center text-sm mt-1">
+        <span class="text-gray-400">Valor total:</span>
         <span class="font-semibold text-gray-100">{{
           formatCurrency(totalAmount)
         }}</span>
@@ -178,6 +191,25 @@ import {
   XMarkIcon,
   PencilIcon,
   TrashIcon,
+  FaceSmileIcon,
+  TruckIcon,
+  SunIcon,
+  HeartIcon,
+  AcademicCapIcon,
+  HomeIcon,
+  ShoppingBagIcon,
+  CpuChipIcon,
+  MapIcon,
+  SparklesIcon,
+  FaceSmileIcon as SportIcon,
+  GiftIcon,
+  BeakerIcon,
+  FireIcon,
+  FilmIcon,
+  BuildingOfficeIcon,
+  BookOpenIcon,
+  Cog6ToothIcon,
+  Squares2X2Icon,
 } from "@heroicons/vue/24/outline";
 
 interface Props {
@@ -241,23 +273,43 @@ const getCategoryColor = (category: string) => {
     Casa: "bg-orange-600",
     Vestuário: "bg-pink-600",
     Tecnologia: "bg-indigo-600",
+    Viagem: "bg-teal-600",
+    Beleza: "bg-pink-400",
+    Esporte: "bg-lime-600",
+    Pets: "bg-amber-600",
+    Farmácia: "bg-emerald-600",
+    Combustível: "bg-slate-600",
+    Streaming: "bg-violet-600",
+    Restaurante: "bg-rose-600",
+    Livros: "bg-cyan-600",
+    Serviços: "bg-stone-600",
     Outros: "bg-gray-600",
   };
   return colors[category] || "bg-gray-600";
 };
 
 const getCategoryIcon = (category: string) => {
-  const icons: Record<string, string> = {
-    Alimentação: "🍽️",
-    Transporte: "🚗",
-    Lazer: "🎮",
-    Saúde: "⚕️",
-    Educação: "📚",
-    Casa: "🏠",
-    Vestuário: "👕",
-    Tecnologia: "💻",
-    Outros: "📦",
+  const icons: Record<string, any> = {
+    Alimentação: FaceSmileIcon,
+    Transporte: TruckIcon,
+    Lazer: SunIcon,
+    Saúde: HeartIcon,
+    Educação: AcademicCapIcon,
+    Casa: HomeIcon,
+    Vestuário: ShoppingBagIcon,
+    Tecnologia: CpuChipIcon,
+    Viagem: MapIcon,
+    Beleza: SparklesIcon,
+    Esporte: SportIcon,
+    Pets: GiftIcon,
+    Farmácia: BeakerIcon,
+    Combustível: FireIcon,
+    Streaming: FilmIcon,
+    Restaurante: BuildingOfficeIcon,
+    Livros: BookOpenIcon,
+    Serviços: Cog6ToothIcon,
+    Outros: Squares2X2Icon,
   };
-  return icons[category] || "📦";
+  return icons[category] || Squares2X2Icon;
 };
 </script>

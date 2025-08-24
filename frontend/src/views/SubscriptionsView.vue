@@ -1,7 +1,6 @@
 <template>
   <AppLayout>
     <div class="space-y-6">
-      <!-- Header com Navegação de Mês -->
       <div
         class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
       >
@@ -12,7 +11,6 @@
           </p>
         </div>
 
-        <!-- Navegação de Mês + Botão Nova Assinatura -->
         <div class="flex items-center space-x-4">
           <div
             class="flex items-center space-x-2 bg-dark-900 border border-dark-700 rounded-lg p-2"
@@ -53,7 +51,6 @@
             Mês Atual
           </button>
 
-          <!-- Botão Nova Assinatura no Header (Desktop) -->
           <Button
             variant="primary"
             size="md"
@@ -66,7 +63,6 @@
         </div>
       </div>
 
-      <!-- Indicador de Mês Atual -->
       <div
         class="bg-primary-900/20 border border-primary-500/30 rounded-lg p-4"
       >
@@ -85,7 +81,6 @@
         </div>
       </div>
 
-      <!-- Stats Cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div
           class="bg-dark-900 border border-dark-800 rounded-xl p-4 sm:p-6 shadow-lg transition-all duration-200 hover:shadow-xl"
@@ -130,7 +125,6 @@
         </div>
       </div>
 
-      <!-- Lista de Assinaturas -->
       <div
         class="bg-dark-900 border border-dark-800 rounded-xl p-4 sm:p-6 shadow-lg transition-all duration-200 hover:shadow-xl"
       >
@@ -206,7 +200,7 @@
                 </h3>
                 <p class="text-sm text-gray-400">
                   {{ subscription.category }} • Renova em
-                  {{ formatDate(subscription.renewalDate) }}
+                  {{ displayDate(subscription.renewalDate) }}
                 </p>
               </div>
             </div>
@@ -240,7 +234,6 @@
       </div>
     </div>
 
-    <!-- Floating Action Button (Mobile) -->
     <FloatingActionButton
       :icon="PlusIcon"
       tooltip="Nova Assinatura"
@@ -248,7 +241,6 @@
       class="sm:hidden"
     />
 
-    <!-- Modal -->
     <SubscriptionModal
       :open="modalOpen"
       :subscription="selectedSubscription"
@@ -256,7 +248,6 @@
       @submit="handleSubmit"
     />
 
-    <!-- Delete Confirmation Modal -->
     <ConfirmationModal
       :open="deleteModalOpen"
       title="Excluir Assinatura"
@@ -271,6 +262,7 @@
 import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { useFinanceStore } from "../stores/finance";
 import { useDateReferenceStore } from "../stores/dateReference";
+import { useDateFormat } from "../composables/useDateFormat";
 import AppLayout from "../components/Layout/AppLayout.vue";
 import Button from "../components/UI/Button.vue";
 import SubscriptionModal from "../components/UI/SubscriptionModal.vue";
@@ -293,7 +285,6 @@ import {
   CodeBracketIcon,
 } from "@heroicons/vue/24/outline";
 
-// Interface para Subscription
 interface Subscription {
   id: string;
   name: string;
@@ -304,11 +295,10 @@ interface Subscription {
   createdAt: string;
 }
 
-// Inicializar stores
 const financeStore = useFinanceStore();
 const dateStore = useDateReferenceStore();
+const { displayDate } = useDateFormat();
 
-// Estados reativos
 const loading = ref(false);
 const modalOpen = ref(false);
 const deleteModalOpen = ref(false);
@@ -318,7 +308,6 @@ const searchTerm = ref("");
 const selectedCategory = ref("");
 const mounted = ref(false);
 
-// Computed properties
 const streamingTotal = computed(() =>
   financeStore.currentMonthSubscriptions
     .filter((sub) => sub.category === "Streaming")
@@ -345,20 +334,11 @@ const filteredSubscriptions = computed(() => {
   return filtered;
 });
 
-// Funções utilitárias
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
   }).format(value);
-};
-
-const formatDate = (date: string) => {
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(date));
 };
 
 const getCategoryIcon = (category: string) => {
@@ -385,7 +365,6 @@ const getCategoryColor = (category: string) => {
   return colors[category as keyof typeof colors] || "bg-gray-600";
 };
 
-// Funções de controle do modal
 const openModal = (subscription: Subscription | null = null) => {
   selectedSubscription.value = subscription;
   modalOpen.value = true;
@@ -396,7 +375,6 @@ const closeModal = () => {
   selectedSubscription.value = null;
 };
 
-// Funções de CRUD
 const handleSubmit = async (subscriptionData: any) => {
   try {
     loading.value = true;
@@ -438,7 +416,6 @@ const handleDelete = async () => {
   }
 };
 
-// Lifecycle
 onMounted(async () => {
   if (mounted.value) return;
   mounted.value = true;
@@ -454,7 +431,6 @@ onMounted(async () => {
   }
 });
 
-// Watch para mudanças de mês
 let watchTimeout: NodeJS.Timeout;
 watch(
   () => dateStore.monthYearString,

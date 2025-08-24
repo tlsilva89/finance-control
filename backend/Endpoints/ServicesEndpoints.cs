@@ -16,8 +16,8 @@ public static class ServicesEndpoints
 
         group.MapGet("", GetServices);
         group.MapPost("", CreateService);
-        group.MapPut("/{id:guid}", UpdateService);
-        group.MapDelete("/{id:guid}", DeleteService);
+        group.MapPut("/{id:int}", UpdateService);
+        group.MapDelete("/{id:int}", DeleteService);
     }
 
     private static DateTime EnsureUtc(DateTime dateTime)
@@ -37,7 +37,7 @@ public static class ServicesEndpoints
     {
         try
         {
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var query = context.Services.Where(s => s.UserId == userId);
             
             if (!string.IsNullOrEmpty(monthReference))
@@ -76,8 +76,7 @@ public static class ServicesEndpoints
             if (string.IsNullOrWhiteSpace(service.MonthReference))
                 return Results.BadRequest(new { error = "Referência do mês é obrigatória" });
 
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            service.Id = Guid.NewGuid();
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             service.UserId = userId;
             service.CreatedAt = DateTime.UtcNow;
             
@@ -93,7 +92,7 @@ public static class ServicesEndpoints
     }
 
     private static async Task<IResult> UpdateService(
-        Guid id,
+        int id,
         Service updatedService,
         AppDbContext context,
         HttpContext httpContext)
@@ -115,7 +114,7 @@ public static class ServicesEndpoints
             if (string.IsNullOrWhiteSpace(updatedService.MonthReference))
                 return Results.BadRequest(new { error = "Referência do mês é obrigatória" });
 
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var service = await context.Services
                 .FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId);
                 
@@ -140,13 +139,13 @@ public static class ServicesEndpoints
     }
 
     private static async Task<IResult> DeleteService(
-        Guid id,
+        int id,
         AppDbContext context,
         HttpContext httpContext)
     {
         try
         {
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var service = await context.Services
                 .FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId);
                 

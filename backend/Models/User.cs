@@ -1,11 +1,13 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FinanceControl.Api.Models;
 
 public class User
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
-    
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public int Id { get; set; } 
     [Required]
     [StringLength(20, MinimumLength = 3)]
     public string Username { get; set; } = string.Empty;

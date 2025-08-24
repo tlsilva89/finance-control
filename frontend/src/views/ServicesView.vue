@@ -1,7 +1,6 @@
 <template>
   <AppLayout>
     <div class="space-y-6">
-      <!-- Header com Navegação de Mês -->
       <div
         class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
       >
@@ -12,7 +11,6 @@
           </p>
         </div>
 
-        <!-- Navegação de Mês + Botão Novo Serviço -->
         <div class="flex items-center space-x-4">
           <div
             class="flex items-center space-x-2 bg-dark-900 border border-dark-700 rounded-lg p-2"
@@ -53,7 +51,6 @@
             Mês Atual
           </button>
 
-          <!-- Botão Novo Serviço no Header (Desktop) -->
           <Button
             variant="primary"
             size="md"
@@ -66,7 +63,6 @@
         </div>
       </div>
 
-      <!-- Indicador de Mês Atual -->
       <div
         class="bg-primary-900/20 border border-primary-500/30 rounded-lg p-4"
       >
@@ -85,7 +81,6 @@
         </div>
       </div>
 
-      <!-- Stats Cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div
           class="bg-dark-900 border border-dark-800 rounded-xl p-4 sm:p-6 shadow-lg transition-all duration-200 hover:shadow-xl"
@@ -130,7 +125,6 @@
         </div>
       </div>
 
-      <!-- Lista de Serviços -->
       <div
         class="bg-dark-900 border border-dark-800 rounded-xl p-4 sm:p-6 shadow-lg transition-all duration-200 hover:shadow-xl"
       >
@@ -238,7 +232,6 @@
       </div>
     </div>
 
-    <!-- Floating Action Button (Mobile) -->
     <FloatingActionButton
       :icon="PlusIcon"
       tooltip="Novo Serviço"
@@ -246,7 +239,6 @@
       class="sm:hidden"
     />
 
-    <!-- Modal -->
     <ServiceModal
       :open="modalOpen"
       :service="selectedService"
@@ -254,7 +246,6 @@
       @submit="handleSubmit"
     />
 
-    <!-- Delete Confirmation Modal -->
     <ConfirmationModal
       :open="deleteModalOpen"
       title="Excluir Serviço"
@@ -292,7 +283,6 @@ import {
   WrenchScrewdriverIcon,
 } from "@heroicons/vue/24/outline";
 
-// Interface para Service
 interface Service {
   id: string;
   name: string;
@@ -303,11 +293,9 @@ interface Service {
   createdAt: string;
 }
 
-// Inicializar stores
 const financeStore = useFinanceStore();
 const dateStore = useDateReferenceStore();
 
-// Estados reativos
 const loading = ref(false);
 const modalOpen = ref(false);
 const deleteModalOpen = ref(false);
@@ -317,7 +305,6 @@ const searchTerm = ref("");
 const selectedCategory = ref("");
 const mounted = ref(false);
 
-// Computed properties
 const basicServicesTotal = computed(() =>
   financeStore.currentMonthServices
     .filter((service) =>
@@ -346,7 +333,6 @@ const filteredServices = computed(() => {
   return filtered;
 });
 
-// Funções utilitárias
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -380,7 +366,6 @@ const getCategoryColor = (category: string) => {
   return colors[category as keyof typeof colors] || "bg-gray-600";
 };
 
-// Funções de controle do modal
 const openModal = (service: Service | null = null) => {
   selectedService.value = service;
   modalOpen.value = true;
@@ -391,7 +376,6 @@ const closeModal = () => {
   selectedService.value = null;
 };
 
-// Funções de CRUD
 const handleSubmit = async (serviceData: any) => {
   try {
     loading.value = true;
@@ -430,7 +414,6 @@ const handleDelete = async () => {
   }
 };
 
-// Lifecycle
 onMounted(async () => {
   if (mounted.value) return;
   mounted.value = true;
@@ -446,7 +429,6 @@ onMounted(async () => {
   }
 });
 
-// Watch para mudanças de mês
 let watchTimeout: NodeJS.Timeout;
 watch(
   () => dateStore.monthYearString,

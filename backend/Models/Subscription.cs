@@ -5,7 +5,9 @@ namespace FinanceControl.Api.Models;
 
 public class Subscription
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public int Id { get; set; }  // ❌ Era: public Guid Id { get; set; } = Guid.NewGuid();
     
     [Required]
     [StringLength(100)]
@@ -21,11 +23,11 @@ public class Subscription
     public string Category { get; set; } = string.Empty;
     
     [Required]
-    [StringLength(7)] // YYYY-MM
+    [StringLength(7)]
     public string MonthReference { get; set; } = string.Empty;
     
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
-    public Guid UserId { get; set; }
+    public int UserId { get; set; }  
     public User User { get; set; } = null!;
 }

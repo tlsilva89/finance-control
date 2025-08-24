@@ -383,7 +383,7 @@
                   +{{ formatCurrency(transaction.amount) }}
                 </p>
                 <p class="text-sm text-gray-400">
-                  {{ formatDate(transaction.date) }}
+                  {{ displayDate(transaction.date) }}
                 </p>
               </div>
             </div>
@@ -446,6 +446,7 @@ import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { useFinanceStore } from "../stores/finance";
 import { useDateReferenceStore } from "../stores/dateReference";
+import { useDateFormat } from "../composables/useDateFormat";
 import AppLayout from "../components/Layout/AppLayout.vue";
 import ChartComponent from "../components/Charts/ChartComponent.vue";
 import {
@@ -481,6 +482,7 @@ interface Transaction {
 const router = useRouter();
 const financeStore = useFinanceStore();
 const dateStore = useDateReferenceStore();
+const { displayDate } = useDateFormat();
 
 const loading = ref(false);
 const mounted = ref(false);
@@ -858,13 +860,6 @@ const formatCurrency = (value: number) => {
     style: "currency",
     currency: "BRL",
   }).format(value);
-};
-
-const formatDate = (date: string) => {
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-  }).format(new Date(date));
 };
 
 const navigateTo = (route: string) => {

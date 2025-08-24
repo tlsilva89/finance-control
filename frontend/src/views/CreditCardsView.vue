@@ -226,18 +226,11 @@
                     <ChevronUpIcon v-else class="w-4 h-4" />
                   </button>
                   <button
-                    @click="openExpenseModal(card.id)"
+                    @click="openPurchaseModal(card.id)"
                     class="p-2 text-gray-400 hover:text-green-400 transition-colors rounded-lg hover:bg-dark-600"
-                    title="Nova compra"
+                    title="Adicionar compra"
                   >
                     <PlusIcon class="w-4 h-4" />
-                  </button>
-                  <button
-                    @click="openExistingExpenseModal(card.id)"
-                    class="p-2 text-gray-400 hover:text-yellow-400 transition-colors rounded-lg hover:bg-dark-600"
-                    title="Compra existente"
-                  >
-                    <ClockIcon class="w-4 h-4" />
                   </button>
                   <button
                     @click="openCardModal(card)"
@@ -264,7 +257,7 @@
               <ExpensesList
                 :expenses="getCardExpenses(card.id)"
                 :loading="expensesLoading"
-                @add-expense="openExpenseModal(card.id)"
+                @add-expense="openPurchaseModal(card.id)"
                 @edit-expense="editExpense"
                 @delete-expense="confirmDeleteExpense"
                 @toggle-paid="toggleExpensePaid"
@@ -289,19 +282,11 @@
       @submit="handleCardSubmit"
     />
 
-    <ExpenseModal
-      :open="expenseModalOpen"
-      :expense="selectedExpense"
+    <PurchaseModal
+      :open="purchaseModalOpen"
       :creditCardId="selectedCardId"
-      @close="closeExpenseModal"
-      @submit="handleExpenseSubmit"
-    />
-
-    <ExistingExpenseModal
-      :open="existingExpenseModalOpen"
-      :creditCardId="selectedCardId"
-      @close="closeExistingExpenseModal"
-      @submit="handleExistingExpenseSubmit"
+      @close="closePurchaseModal"
+      @submit="handlePurchaseSubmit"
     />
 
     <ConfirmationModal
@@ -333,8 +318,7 @@ import { useDateReferenceStore } from "../stores/dateReference";
 import AppLayout from "../components/Layout/AppLayout.vue";
 import Button from "../components/UI/Button.vue";
 import CreditCardModal from "../components/UI/CreditCardModal.vue";
-import ExpenseModal from "../components/UI/ExpenseModal.vue";
-import ExistingExpenseModal from "../components/UI/ExistingExpenseModal.vue";
+import PurchaseModal from "../components/UI/PurchaseModal.vue";
 import ExpensesList from "../components/UI/ExpensesList.vue";
 import FloatingActionButton from "../components/UI/FloatingActionButton.vue";
 import ConfirmationModal from "../components/UI/ConfirmationModal.vue";
@@ -351,7 +335,6 @@ import {
   ChevronRightIcon,
   ChevronDownIcon,
   ChevronUpIcon,
-  ClockIcon,
 } from "@heroicons/vue/24/outline";
 
 const financeStore = useFinanceStore();
@@ -360,12 +343,10 @@ const dateStore = useDateReferenceStore();
 const loading = ref(false);
 const expensesLoading = ref(false);
 const cardModalOpen = ref(false);
-const expenseModalOpen = ref(false);
-const existingExpenseModalOpen = ref(false);
+const purchaseModalOpen = ref(false);
 const deleteCardModalOpen = ref(false);
 const deleteExpenseModalOpen = ref(false);
 const selectedCreditCard = ref<CreditCard | null>(null);
-const selectedExpense = ref<CreditCardExpense | null>(null);
 const selectedCardId = ref("");
 const cardToDelete = ref<CreditCard | null>(null);
 const expenseToDelete = ref<CreditCardExpense | null>(null);
@@ -419,28 +400,13 @@ const closeCardModal = () => {
   selectedCreditCard.value = null;
 };
 
-const openExpenseModal = (
-  cardId: string,
-  expense: CreditCardExpense | null = null
-) => {
+const openPurchaseModal = (cardId: string) => {
   selectedCardId.value = cardId;
-  selectedExpense.value = expense;
-  expenseModalOpen.value = true;
+  purchaseModalOpen.value = true;
 };
 
-const closeExpenseModal = () => {
-  expenseModalOpen.value = false;
-  selectedExpense.value = null;
-  selectedCardId.value = "";
-};
-
-const openExistingExpenseModal = (cardId: string) => {
-  selectedCardId.value = cardId;
-  existingExpenseModalOpen.value = true;
-};
-
-const closeExistingExpenseModal = () => {
-  existingExpenseModalOpen.value = false;
+const closePurchaseModal = () => {
+  purchaseModalOpen.value = false;
   selectedCardId.value = "";
 };
 
@@ -461,47 +427,36 @@ const handleCardSubmit = async (creditCardData: any) => {
   }
 };
 
-const handleExpenseSubmit = async (expenseData: any) => {
+const handlePurchaseSubmit = async (data: any, type: "new" | "existing") => {
   try {
     expensesLoading.value = true;
 
-    await financeStore.addExpenseWithInstallments({
-      description: expenseData.description,
-      amount: expenseData.totalAmount,
-      installmentAmount: expenseData.installmentAmount,
-      purchaseDate: expenseData.purchaseDate,
-      installments: expenseData.installments,
-      category: expenseData.category,
-      creditCardId: expenseData.creditCardId,
-    });
+    if (type === "new") {
+      await financeStore.addExpenseWithInstallments({
+        description: data.description,
+        amount: data.totalAmount,
+        installmentAmount: data.installmentAmount,
+        purchaseDate: data.purchaseDate,
+        installments: data.installments,
+        category: data.category,
+        creditCardId: data.creditCardId,
+      });
+    } else {
+      await financeStore.addExistingExpenseWithInstallments(data);
+    }
+
+    if (!expandedCards.value.has(data.creditCardId)) {
+      expandedCards.value.add(data.creditCardId);
+    }
 
     await Promise.all([
-      loadCardExpenses(expenseData.creditCardId),
+      loadCardExpenses(data.creditCardId),
       financeStore.fetchCreditCards(),
     ]);
 
-    closeExpenseModal();
+    closePurchaseModal();
   } catch (err) {
-    console.error("Erro ao salvar gasto:", err);
-  } finally {
-    expensesLoading.value = false;
-  }
-};
-
-const handleExistingExpenseSubmit = async (expenseData: any) => {
-  try {
-    expensesLoading.value = true;
-
-    await financeStore.addExistingExpenseWithInstallments(expenseData);
-
-    await Promise.all([
-      loadCardExpenses(expenseData.creditCardId),
-      financeStore.fetchCreditCards(),
-    ]);
-
-    closeExistingExpenseModal();
-  } catch (err) {
-    console.error("Erro ao salvar compra existente:", err);
+    console.error("Erro ao salvar compra:", err);
   } finally {
     expensesLoading.value = false;
   }
@@ -528,7 +483,7 @@ const handleDeleteCard = async () => {
 };
 
 const editExpense = (expense: CreditCardExpense) => {
-  openExpenseModal(expense.creditCardId, expense);
+  openPurchaseModal(expense.creditCardId);
 };
 
 const confirmDeleteExpense = (expense: CreditCardExpense) => {
@@ -576,6 +531,8 @@ const toggleExpensePaid = async (expense: CreditCardExpense) => {
 const toggleExpenses = async (cardId: string) => {
   if (expandedCards.value.has(cardId)) {
     expandedCards.value.delete(cardId);
+    const { [cardId]: _, ...rest } = cardExpenses.value;
+    cardExpenses.value = rest;
   } else {
     expandedCards.value.add(cardId);
     await loadCardExpenses(cardId);
@@ -585,11 +542,16 @@ const toggleExpenses = async (cardId: string) => {
 const loadCardExpenses = async (cardId: string) => {
   try {
     expensesLoading.value = true;
-    const expenses = await financeStore.fetchExpensesByCard(
+
+    const expenses = await financeStore.fetchActiveExpensesByCard(
       cardId,
       dateStore.monthYearString
     );
-    cardExpenses.value[cardId] = expenses;
+
+    cardExpenses.value = {
+      ...cardExpenses.value,
+      [cardId]: [...expenses],
+    };
   } catch (err) {
     console.error("Erro ao carregar gastos do cartão:", err);
   } finally {
@@ -626,8 +588,13 @@ watch(
       loading.value = true;
       try {
         await financeStore.fetchCreditCards();
-        expandedCards.value.clear();
-        cardExpenses.value = {};
+
+        const reloadPromises = [];
+        for (const cardId of expandedCards.value) {
+          reloadPromises.push(loadCardExpenses(cardId));
+        }
+        await Promise.all(reloadPromises);
+
         await nextTick();
       } catch (err) {
         console.error("Erro ao carregar cartões:", err);

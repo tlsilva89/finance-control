@@ -15,13 +15,14 @@ public static class CreditCardExpensesEndpoints
             .RequireAuthorization();
 
         group.MapGet("", GetExpenses);
-        group.MapGet("/card/{cardId:guid}", GetExpensesByCard);
+        group.MapGet("/card/{cardId:int}", GetExpensesByCard);
+        group.MapGet("/card/{cardId:int}/active", GetActiveExpensesByCard);
         group.MapPost("", CreateExpense);
         group.MapPost("/with-installments", CreateExpenseWithInstallments);
         group.MapPost("/existing-with-installments", CreateExistingExpenseWithInstallments);
-        group.MapPut("/{id:guid}", UpdateExpense);
-        group.MapDelete("/{id:guid}", DeleteExpense);
-        group.MapPatch("/{id:guid}/pay", MarkAsPaid);
+        group.MapPut("/{id:int}", UpdateExpense);
+        group.MapDelete("/{id:int}", DeleteExpense);
+        group.MapPatch("/{id:int}/pay", MarkAsPaid);
     }
 
     private static DateTime EnsureUtc(DateTime dateTime)
@@ -43,7 +44,7 @@ public static class CreditCardExpensesEndpoints
     {
         try
         {
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
             var query = context.CreditCardExpenses
                 .Where(e => e.UserId == userId);
@@ -82,14 +83,14 @@ public static class CreditCardExpensesEndpoints
     }
 
     private static async Task<IResult> GetExpensesByCard(
-        Guid cardId,
+        int cardId,
         AppDbContext context,
         HttpContext httpContext,
         string? monthReference = null)
     {
         try
         {
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
             var query = context.CreditCardExpenses
                 .Where(e => e.UserId == userId && e.CreditCardId == cardId);
@@ -117,6 +118,52 @@ public static class CreditCardExpensesEndpoints
         }
     }
 
+    private static async Task<IResult> GetActiveExpensesByCard(
+        int cardId,
+        AppDbContext context,
+        HttpContext httpContext,
+        string? periodMonth = null)
+    {
+        try
+        {
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            var allExpenses = await context.CreditCardExpenses
+                .Where(e => e.UserId == userId && e.CreditCardId == cardId && !e.IsPaid)
+                .OrderBy(e => e.PurchaseDate)
+                .ToListAsync();
+
+            if (string.IsNullOrEmpty(periodMonth))
+            {
+                return Results.Ok(allExpenses);
+            }
+
+            if (DateTime.TryParseExact(periodMonth, "yyyy-MM", null, System.Globalization.DateTimeStyles.None, out var targetPeriod))
+            {
+                var activeInPeriod = new List<CreditCardExpense>();
+
+                foreach (var expense in allExpenses)
+                {
+                    var installmentDate = expense.PurchaseDate.AddMonths(expense.CurrentInstallment - 1);
+                    
+                    if (installmentDate.Year == targetPeriod.Year && 
+                        installmentDate.Month == targetPeriod.Month)
+                    {
+                        activeInPeriod.Add(expense);
+                    }
+                }
+
+                return Results.Ok(activeInPeriod);
+            }
+
+            return Results.Ok(allExpenses);
+        }
+        catch (Exception ex)
+        {
+            return Results.BadRequest(new { error = "Erro ao buscar parcelas ativas", details = ex.Message });
+        }
+    }
+
     private static async Task<IResult> CreateExpense(
         CreditCardExpense expense,
         AppDbContext context,
@@ -130,7 +177,7 @@ public static class CreditCardExpensesEndpoints
             if (expense.Amount <= 0)
                 return Results.BadRequest(new { error = "Valor deve ser maior que zero" });
 
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
             var creditCard = await context.CreditCards
                 .FirstOrDefaultAsync(c => c.Id == expense.CreditCardId && c.UserId == userId);
@@ -140,7 +187,6 @@ public static class CreditCardExpensesEndpoints
                 return Results.BadRequest(new { error = "Cartão não encontrado" });
             }
 
-            expense.Id = Guid.NewGuid();
             expense.UserId = userId;
             expense.CreatedAt = DateTime.UtcNow;
             expense.PurchaseDate = EnsureUtc(expense.PurchaseDate);
@@ -198,7 +244,7 @@ public static class CreditCardExpensesEndpoints
 
             baseDate = EnsureUtc(baseDate);
 
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
             var creditCard = await context.CreditCards
                 .FirstOrDefaultAsync(c => c.Id == request.CreditCardId && c.UserId == userId);
@@ -216,7 +262,6 @@ public static class CreditCardExpensesEndpoints
 
                 var expense = new CreditCardExpense
                 {
-                    Id = Guid.NewGuid(),
                     UserId = userId,
                     CreditCardId = request.CreditCardId,
                     Description = request.Description,
@@ -271,7 +316,7 @@ public static class CreditCardExpensesEndpoints
 
             originalDate = EnsureUtc(originalDate);
 
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
             var creditCard = await context.CreditCards
                 .FirstOrDefaultAsync(c => c.Id == request.CreditCardId && c.UserId == userId);
@@ -289,7 +334,6 @@ public static class CreditCardExpensesEndpoints
 
                 var expense = new CreditCardExpense
                 {
-                    Id = Guid.NewGuid(),
                     UserId = userId,
                     CreditCardId = request.CreditCardId,
                     Description = request.Description,
@@ -318,7 +362,7 @@ public static class CreditCardExpensesEndpoints
     }
 
     private static async Task<IResult> UpdateExpense(
-        Guid id,
+        int id,
         CreditCardExpense updatedExpense,
         AppDbContext context,
         HttpContext httpContext)
@@ -331,7 +375,7 @@ public static class CreditCardExpensesEndpoints
             if (updatedExpense.Amount <= 0)
                 return Results.BadRequest(new { error = "Valor deve ser maior que zero" });
 
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
             var expense = await context.CreditCardExpenses
                 .FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId);
@@ -369,13 +413,13 @@ public static class CreditCardExpensesEndpoints
     }
 
     private static async Task<IResult> DeleteExpense(
-        Guid id,
+        int id,
         AppDbContext context,
         HttpContext httpContext)
     {
         try
         {
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
             var expense = await context.CreditCardExpenses
                 .FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId);
@@ -397,13 +441,13 @@ public static class CreditCardExpensesEndpoints
     }
 
     private static async Task<IResult> MarkAsPaid(
-        Guid id,
+        int id,
         AppDbContext context,
         HttpContext httpContext)
     {
         try
         {
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
             var expense = await context.CreditCardExpenses
                 .FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId);
@@ -432,7 +476,7 @@ public record CreateExpenseWithInstallmentsRequest(
     string PurchaseDate,
     int Installments,
     string Category,
-    Guid CreditCardId);
+    int CreditCardId);
 
 public record CreateExistingExpenseRequest(
     string Description,
@@ -442,4 +486,4 @@ public record CreateExistingExpenseRequest(
     int TotalInstallments,
     int CurrentInstallment,
     string Category,
-    Guid CreditCardId);
+    int CreditCardId);

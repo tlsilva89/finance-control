@@ -4,7 +4,9 @@ using FinanceControl.Api.Data;
 using FinanceControl.Api.Models;
 using FinanceControl.Api.Dtos;
 using FinanceControl.Api.Services;
+
 namespace FinanceControl.Api.Endpoints;
+
 public static class AuthEndpoints
 {
     public static void Map(WebApplication app)

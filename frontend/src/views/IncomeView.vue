@@ -1,7 +1,6 @@
 <template>
   <AppLayout>
     <div class="space-y-6">
-      <!-- Header com Navegação de Mês -->
       <div
         class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
       >
@@ -12,7 +11,6 @@
           </p>
         </div>
 
-        <!-- Navegação de Mês + Botão Nova Entrada -->
         <div class="flex items-center space-x-4">
           <div
             class="flex items-center space-x-2 bg-dark-900 border border-dark-700 rounded-lg p-2"
@@ -53,7 +51,6 @@
             Mês Atual
           </button>
 
-          <!-- Botão Nova Entrada no Header (Desktop) -->
           <Button
             variant="primary"
             size="md"
@@ -66,7 +63,6 @@
         </div>
       </div>
 
-      <!-- Indicador de Mês Atual -->
       <div
         class="bg-primary-900/20 border border-primary-500/30 rounded-lg p-4"
       >
@@ -85,7 +81,6 @@
         </div>
       </div>
 
-      <!-- Stats Cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div
           class="bg-dark-900 border border-dark-800 rounded-xl p-4 sm:p-6 shadow-lg transition-all duration-200 hover:shadow-xl"
@@ -130,7 +125,6 @@
         </div>
       </div>
 
-      <!-- Lista de Entradas -->
       <div
         class="bg-dark-900 border border-dark-800 rounded-xl p-4 sm:p-6 shadow-lg transition-all duration-200 hover:shadow-xl"
       >
@@ -186,7 +180,7 @@
                   {{ income.description }}
                 </h3>
                 <p class="text-sm text-gray-400">
-                  {{ formatDate(income.date) }}
+                  {{ displayDate(income.date) }}
                 </p>
               </div>
             </div>
@@ -218,12 +212,8 @@
           </div>
         </div>
       </div>
-
-      <!-- REMOVIDO: Botão duplicado "Adicionar Nova Entrada" -->
-      <!-- Esta seção foi removida para evitar duplicação -->
     </div>
 
-    <!-- Floating Action Button (Mobile) -->
     <FloatingActionButton
       :icon="PlusIcon"
       tooltip="Nova Entrada"
@@ -231,7 +221,6 @@
       class="sm:hidden"
     />
 
-    <!-- Modal -->
     <IncomeModal
       :open="modalOpen"
       :income="selectedIncome"
@@ -239,7 +228,6 @@
       @submit="handleSubmit"
     />
 
-    <!-- Delete Confirmation Modal -->
     <ConfirmationModal
       :open="deleteModalOpen"
       title="Excluir Entrada"
@@ -254,6 +242,7 @@
 import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { useFinanceStore } from "../stores/finance";
 import { useDateReferenceStore } from "../stores/dateReference";
+import { useDateFormat } from "../composables/useDateFormat";
 import AppLayout from "../components/Layout/AppLayout.vue";
 import Button from "../components/UI/Button.vue";
 import IncomeModal from "../components/UI/IncomeModal.vue";
@@ -273,7 +262,6 @@ import {
   ChevronRightIcon,
 } from "@heroicons/vue/24/outline";
 
-// Interface para Income
 interface Income {
   id: string;
   description: string;
@@ -283,11 +271,10 @@ interface Income {
   createdAt: string;
 }
 
-// Inicializar stores uma única vez
 const financeStore = useFinanceStore();
 const dateStore = useDateReferenceStore();
+const { displayDate } = useDateFormat();
 
-// Estados reativos
 const loading = ref(false);
 const modalOpen = ref(false);
 const deleteModalOpen = ref(false);
@@ -296,11 +283,10 @@ const incomeToDelete = ref<Income | null>(null);
 const searchTerm = ref("");
 const mounted = ref(false);
 
-// Computed properties baseados no mês atual
 const lastIncomeDate = computed(() => {
   if (financeStore.currentMonthIncomes.length === 0) return "Nenhuma";
   const lastIncome = financeStore.currentMonthIncomes[0];
-  return formatDate(lastIncome.date);
+  return displayDate(lastIncome.date);
 });
 
 const filteredIncomes = computed(() => {
@@ -311,7 +297,6 @@ const filteredIncomes = computed(() => {
   );
 });
 
-// Funções utilitárias
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -319,15 +304,6 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 
-const formatDate = (date: string) => {
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(date));
-};
-
-// Funções de controle do modal
 const openModal = (income: Income | null = null) => {
   selectedIncome.value = income;
   modalOpen.value = true;
@@ -338,7 +314,6 @@ const closeModal = () => {
   selectedIncome.value = null;
 };
 
-// Funções de CRUD
 const handleSubmit = async (incomeData: any) => {
   try {
     loading.value = true;
@@ -377,9 +352,8 @@ const handleDelete = async () => {
   }
 };
 
-// Lifecycle
 onMounted(async () => {
-  if (mounted.value) return; // Prevenir montagem dupla
+  if (mounted.value) return;
   mounted.value = true;
 
   loading.value = true;
@@ -393,7 +367,6 @@ onMounted(async () => {
   }
 });
 
-// Watch para mudanças de mês (com debounce)
 let watchTimeout: NodeJS.Timeout;
 watch(
   () => dateStore.monthYearString,

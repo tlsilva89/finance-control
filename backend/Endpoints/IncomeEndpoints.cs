@@ -16,8 +16,8 @@ public static class IncomeEndpoints
 
         group.MapGet("", GetIncomes);
         group.MapPost("", CreateIncome);
-        group.MapPut("/{id:guid}", UpdateIncome);
-        group.MapDelete("/{id:guid}", DeleteIncome);
+        group.MapPut("/{id:int}", UpdateIncome);
+        group.MapDelete("/{id:int}", DeleteIncome);
     }
 
     private static DateTime EnsureUtc(DateTime dateTime)
@@ -37,7 +37,7 @@ public static class IncomeEndpoints
     {
         try
         {
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var query = context.Incomes.Where(i => i.UserId == userId);
             
             if (!string.IsNullOrEmpty(monthReference))
@@ -70,8 +70,7 @@ public static class IncomeEndpoints
             if (string.IsNullOrWhiteSpace(income.MonthReference))
                 return Results.BadRequest(new { error = "Referência do mês é obrigatória" });
 
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            income.Id = Guid.NewGuid();
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             income.UserId = userId;
             income.CreatedAt = DateTime.UtcNow;
             income.Date = EnsureUtc(income.Date);
@@ -88,7 +87,7 @@ public static class IncomeEndpoints
     }
 
     private static async Task<IResult> UpdateIncome(
-        Guid id,
+        int id,
         Income updatedIncome,
         AppDbContext context,
         HttpContext httpContext)
@@ -104,7 +103,7 @@ public static class IncomeEndpoints
             if (string.IsNullOrWhiteSpace(updatedIncome.MonthReference))
                 return Results.BadRequest(new { error = "Referência do mês é obrigatória" });
 
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var income = await context.Incomes
                 .FirstOrDefaultAsync(i => i.Id == id && i.UserId == userId);
                 
@@ -128,13 +127,13 @@ public static class IncomeEndpoints
     }
 
     private static async Task<IResult> DeleteIncome(
-        Guid id,
+        int id,
         AppDbContext context,
         HttpContext httpContext)
     {
         try
         {
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var income = await context.Incomes
                 .FirstOrDefaultAsync(i => i.Id == id && i.UserId == userId);
                 

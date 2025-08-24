@@ -16,8 +16,8 @@ public static class SubscriptionsEndpoints
 
         group.MapGet("", GetSubscriptions);
         group.MapPost("", CreateSubscription);
-        group.MapPut("/{id:guid}", UpdateSubscription);
-        group.MapDelete("/{id:guid}", DeleteSubscription);
+        group.MapPut("/{id:int}", UpdateSubscription);
+        group.MapDelete("/{id:int}", DeleteSubscription);
     }
 
     private static DateTime EnsureUtc(DateTime dateTime)
@@ -37,7 +37,7 @@ public static class SubscriptionsEndpoints
     {
         try
         {
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var query = context.Subscriptions.Where(s => s.UserId == userId);
             
             if (!string.IsNullOrEmpty(monthReference))
@@ -73,8 +73,7 @@ public static class SubscriptionsEndpoints
             if (string.IsNullOrWhiteSpace(subscription.MonthReference))
                 return Results.BadRequest(new { error = "Referência do mês é obrigatória" });
 
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            subscription.Id = Guid.NewGuid();
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             subscription.UserId = userId;
             subscription.CreatedAt = DateTime.UtcNow;
             subscription.RenewalDate = EnsureUtc(subscription.RenewalDate);
@@ -91,7 +90,7 @@ public static class SubscriptionsEndpoints
     }
 
     private static async Task<IResult> UpdateSubscription(
-        Guid id,
+        int id,
         Subscription updatedSubscription,
         AppDbContext context,
         HttpContext httpContext)
@@ -110,7 +109,7 @@ public static class SubscriptionsEndpoints
             if (string.IsNullOrWhiteSpace(updatedSubscription.MonthReference))
                 return Results.BadRequest(new { error = "Referência do mês é obrigatória" });
 
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var subscription = await context.Subscriptions
                 .FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId);
                 
@@ -135,13 +134,13 @@ public static class SubscriptionsEndpoints
     }
 
     private static async Task<IResult> DeleteSubscription(
-        Guid id,
+        int id,
         AppDbContext context,
         HttpContext httpContext)
     {
         try
         {
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var subscription = await context.Subscriptions
                 .FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId);
                 

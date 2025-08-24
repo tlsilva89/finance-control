@@ -5,7 +5,9 @@ namespace FinanceControl.Api.Models;
 
 public class CreditCardExpense
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public int Id { get; set; }  
     
     [Required]
     [StringLength(200)]
@@ -30,9 +32,9 @@ public class CreditCardExpense
     
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
-    public Guid CreditCardId { get; set; }
+    public int CreditCardId { get; set; }  // Era Guid
     public CreditCard CreditCard { get; set; } = null!;
     
-    public Guid UserId { get; set; }
+    public int UserId { get; set; }  // Era Guid
     public User User { get; set; } = null!;
 }

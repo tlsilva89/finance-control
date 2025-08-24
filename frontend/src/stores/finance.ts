@@ -369,6 +369,20 @@ export const useFinanceStore = defineStore("finance", {
       return Array.isArray(response.data) ? response.data : [];
     },
 
+    async fetchActiveExpensesByCard(
+      cardId: string,
+      periodMonth?: string
+    ): Promise<CreditCardExpense[]> {
+      const params = new URLSearchParams();
+      if (periodMonth) {
+        params.append("periodMonth", periodMonth);
+      }
+      const response = await api.get(
+        `/api/credit-card-expenses/card/${cardId}/active?${params.toString()}`
+      );
+      return Array.isArray(response.data) ? response.data : [];
+    },
+
     async addExpense(
       expense: Omit<
         CreditCardExpense,
@@ -398,17 +412,43 @@ export const useFinanceStore = defineStore("finance", {
       creditCardId: string;
     }) {
       const { success, error } = useNotification();
+
+      if (!expense.description?.trim()) {
+        error("Descrição é obrigatória");
+        throw new Error("Descrição é obrigatória");
+      }
+
+      if (expense.amount <= 0) {
+        error("Valor deve ser maior que zero");
+        throw new Error("Valor deve ser maior que zero");
+      }
+
+      if (expense.installments <= 0) {
+        error("Parcelas devem ser maior que zero");
+        throw new Error("Parcelas devem ser maior que zero");
+      }
+
+      if (!expense.category?.trim()) {
+        error("Categoria é obrigatória");
+        throw new Error("Categoria é obrigatória");
+      }
+
       try {
+        const datePart = expense.purchaseDate.split("T")[0];
+        const normalizedDate = /^\d{4}-\d{2}-\d{2}$/.test(datePart)
+          ? datePart
+          : expense.purchaseDate;
+
         const expenseToAdd = {
           ...expense,
-          purchaseDate:
-            formatDateForAPI(expense.purchaseDate) ||
-            new Date().toISOString().split("T")[0],
+          purchaseDate: normalizedDate,
         };
+
         const response = await api.post(
           "/api/credit-card-expenses/with-installments",
           expenseToAdd
         );
+
         success(
           `${expense.installments} parcela(s) adicionada(s) com sucesso!`
         );
@@ -430,17 +470,51 @@ export const useFinanceStore = defineStore("finance", {
       creditCardId: string;
     }) {
       const { success, error } = useNotification();
+
+      if (!expense.description?.trim()) {
+        error("Descrição é obrigatória");
+        throw new Error("Descrição é obrigatória");
+      }
+
+      if (expense.totalAmount <= 0) {
+        error("Valor total deve ser maior que zero");
+        throw new Error("Valor total deve ser maior que zero");
+      }
+
+      if (expense.totalInstallments <= 0) {
+        error("Total de parcelas deve ser maior que zero");
+        throw new Error("Total de parcelas deve ser maior que zero");
+      }
+
+      if (
+        expense.currentInstallment <= 0 ||
+        expense.currentInstallment > expense.totalInstallments
+      ) {
+        error("Parcela atual deve estar entre 1 e o total de parcelas");
+        throw new Error("Parcela atual inválida");
+      }
+
+      if (!expense.category?.trim()) {
+        error("Categoria é obrigatória");
+        throw new Error("Categoria é obrigatória");
+      }
+
       try {
+        const datePart = expense.originalPurchaseDate.split("T")[0];
+        const normalizedDate = /^\d{4}-\d{2}-\d{2}$/.test(datePart)
+          ? datePart
+          : expense.originalPurchaseDate;
+
         const expenseToAdd = {
           ...expense,
-          originalPurchaseDate:
-            formatDateForAPI(expense.originalPurchaseDate) ||
-            new Date().toISOString().split("T")[0],
+          originalPurchaseDate: normalizedDate,
         };
+
         const response = await api.post(
           "/api/credit-card-expenses/existing-with-installments",
           expenseToAdd
         );
+
         const remainingInstallments =
           expense.totalInstallments - expense.currentInstallment + 1;
         success(

@@ -29,7 +29,7 @@ public record ResetPasswordRequest(
 
 public record AuthResponse(UserDto User, string Token);
 
-public record UserDto(Guid Id, string Username, string Name);
+public record UserDto(int Id, string Username, string Name);
 
 public record CheckUsernameResponse(bool Available, string Message);
 

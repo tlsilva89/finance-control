@@ -15,10 +15,10 @@ public static class CreditCardsEndpoints
             .RequireAuthorization();
 
         group.MapGet("", GetCreditCards);
-        group.MapGet("/{id:guid}", GetCreditCard);
+        group.MapGet("/{id:int}", GetCreditCard);
         group.MapPost("", CreateCreditCard);
-        group.MapPut("/{id:guid}", UpdateCreditCard);
-        group.MapDelete("/{id:guid}", DeleteCreditCard);
+        group.MapPut("/{id:int}", UpdateCreditCard);
+        group.MapDelete("/{id:int}", DeleteCreditCard);
     }
 
     private static DateTime EnsureUtc(DateTime dateTime)
@@ -38,7 +38,7 @@ public static class CreditCardsEndpoints
     {
         try
         {
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
             var creditCards = await context.CreditCards
                 .Where(c => c.UserId == userId)
@@ -82,7 +82,6 @@ public static class CreditCardsEndpoints
                 card.TotalConsumption = totalConsumption;
             }
 
-
             return Results.Ok(creditCards);
         }
         catch (Exception ex)
@@ -92,13 +91,13 @@ public static class CreditCardsEndpoints
     }
 
     private static async Task<IResult> GetCreditCard(
-        Guid id,
+        int id,
         AppDbContext context,
         HttpContext httpContext)
     {
         try
         {
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var creditCard = await context.CreditCards
                 .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
 
@@ -155,8 +154,7 @@ public static class CreditCardsEndpoints
             if (creditCard.DueDate < 1 || creditCard.DueDate > 31)
                 return Results.BadRequest(new { error = "Data de vencimento deve estar entre 1 e 31" });
 
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            creditCard.Id = Guid.NewGuid();
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             creditCard.UserId = userId;
             creditCard.CreatedAt = DateTime.UtcNow;
             creditCard.CurrentDebt = 0;
@@ -178,7 +176,7 @@ public static class CreditCardsEndpoints
     }
 
     private static async Task<IResult> UpdateCreditCard(
-        Guid id,
+        int id,
         CreditCard updatedCreditCard,
         AppDbContext context,
         HttpContext httpContext)
@@ -194,7 +192,7 @@ public static class CreditCardsEndpoints
             if (updatedCreditCard.DueDate < 1 || updatedCreditCard.DueDate > 31)
                 return Results.BadRequest(new { error = "Data de vencimento deve estar entre 1 e 31" });
 
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var creditCard = await context.CreditCards
                 .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
 
@@ -243,13 +241,13 @@ public static class CreditCardsEndpoints
     }
 
     private static async Task<IResult> DeleteCreditCard(
-        Guid id,
+        int id,
         AppDbContext context,
         HttpContext httpContext)
     {
         try
         {
-            var userId = Guid.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var creditCard = await context.CreditCards
                 .Include(c => c.Expenses)
                 .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
