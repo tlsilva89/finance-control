@@ -65,6 +65,18 @@ export interface Service {
   createdAt: string;
 }
 
+export interface FinancialReport {
+  startDate: string;
+  endDate: string;
+  totalIncomes: number;
+  totalExpenses: number;
+  balance: number;
+  incomes: Income[];
+  creditCardExpenses: CreditCardExpense[];
+  subscriptions: Subscription[];
+  services: Service[];
+}
+
 interface FinanceState {
   incomes: Income[];
   creditCards: CreditCard[];
@@ -97,12 +109,10 @@ export const useFinanceStore = defineStore("finance", {
         (income) => normalizeMonthRef(income.monthReference) === target
       );
     },
-
     currentMonthCreditCards(): CreditCard[] {
       if (!Array.isArray(this.creditCards)) return [];
       return this.creditCards;
     },
-
     currentMonthSubscriptions(): Subscription[] {
       if (!Array.isArray(this.subscriptions)) return [];
       const dateStore = useDateReferenceStore();
@@ -111,7 +121,6 @@ export const useFinanceStore = defineStore("finance", {
         (sub) => normalizeMonthRef(sub.monthReference) === target
       );
     },
-
     currentMonthServices(): Service[] {
       if (!Array.isArray(this.services)) return [];
       const dateStore = useDateReferenceStore();
@@ -120,26 +129,22 @@ export const useFinanceStore = defineStore("finance", {
         (service) => normalizeMonthRef(service.monthReference) === target
       );
     },
-
     totalIncome(): number {
       return this.currentMonthIncomes.reduce(
         (sum, income) => sum + income.amount,
         0
       );
     },
-
     totalCreditCardDebt(): number {
       return this.currentMonthCreditCards.reduce(
         (sum, card) => sum + card.currentDebt,
         0
       );
     },
-
     totalCreditCardLimit(): number {
       if (!Array.isArray(this.creditCards)) return 0;
       return this.creditCards.reduce((sum, card) => sum + card.limit, 0);
     },
-
     totalCreditCardConsumption(): number {
       if (!Array.isArray(this.creditCards)) return 0;
       return this.creditCards.reduce(
@@ -147,29 +152,24 @@ export const useFinanceStore = defineStore("finance", {
         0
       );
     },
-
     availableCreditLimit(): number {
       return this.totalCreditCardLimit - this.totalCreditCardConsumption;
     },
-
     totalSubscriptions(): number {
       return this.currentMonthSubscriptions.reduce(
         (sum, sub) => sum + sub.amount,
         0
       );
     },
-
     totalServices(): number {
       return this.currentMonthServices.reduce(
         (sum, service) => sum + service.amount,
         0
       );
     },
-
     monthlyExpenses(): number {
       return this.totalSubscriptions + this.totalServices;
     },
-
     balance(): number {
       return this.totalIncome - this.monthlyExpenses - this.totalCreditCardDebt;
     },
@@ -190,7 +190,6 @@ export const useFinanceStore = defineStore("finance", {
         this.loading = false;
       }
     },
-
     async fetchIncomes(monthReference?: string) {
       const dateStore = useDateReferenceStore();
       const month = monthReference || dateStore.monthYearString;
@@ -213,7 +212,6 @@ export const useFinanceStore = defineStore("finance", {
         this.loading = false;
       }
     },
-
     async addIncome(
       income: Omit<Income, "id" | "createdAt" | "monthReference">
     ) {
@@ -236,7 +234,6 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
-
     async updateIncome(id: string, income: Partial<Income>) {
       const { success, error } = useNotification();
       const dateStore = useDateReferenceStore();
@@ -258,7 +255,6 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
-
     async deleteIncome(id: string) {
       const { success, error } = useNotification();
       try {
@@ -271,7 +267,6 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
-
     async fetchCreditCards(monthReference?: string) {
       const dateStore = useDateReferenceStore();
       const month = monthReference || dateStore.monthYearString;
@@ -289,7 +284,6 @@ export const useFinanceStore = defineStore("finance", {
         this.loading = false;
       }
     },
-
     async addCreditCard(
       creditCard: Omit<
         CreditCard,
@@ -307,7 +301,6 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
-
     async updateCreditCard(id: string, creditCard: Partial<CreditCard>) {
       const { success, error } = useNotification();
       try {
@@ -323,7 +316,6 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
-
     async deleteCreditCard(id: string) {
       const { success, error } = useNotification();
       try {
@@ -336,7 +328,6 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
-
     async fetchExpensesByCard(
       cardId: string,
       monthReference?: string
@@ -350,7 +341,6 @@ export const useFinanceStore = defineStore("finance", {
       );
       return Array.isArray(response.data) ? response.data : [];
     },
-
     async fetchActiveExpensesByCard(
       cardId: string,
       periodMonth?: string
@@ -364,7 +354,6 @@ export const useFinanceStore = defineStore("finance", {
       );
       return Array.isArray(response.data) ? response.data : [];
     },
-
     async addExpense(
       expense: Omit<
         CreditCardExpense,
@@ -383,7 +372,6 @@ export const useFinanceStore = defineStore("finance", {
       );
       return response.data;
     },
-
     async addExpenseWithInstallments(expense: {
       description: string;
       amount: number;
@@ -394,43 +382,35 @@ export const useFinanceStore = defineStore("finance", {
       creditCardId: string;
     }) {
       const { success, error } = useNotification();
-
       if (!expense.description?.trim()) {
         error("Descrição é obrigatória");
         throw new Error("Descrição é obrigatória");
       }
-
       if (expense.amount <= 0) {
         error("Valor deve ser maior que zero");
         throw new Error("Valor deve ser maior que zero");
       }
-
       if (expense.installments <= 0) {
         error("Parcelas devem ser maior que zero");
         throw new Error("Parcelas devem ser maior que zero");
       }
-
       if (!expense.category?.trim()) {
         error("Categoria é obrigatória");
         throw new Error("Categoria é obrigatória");
       }
-
       try {
         const datePart = expense.purchaseDate.split("T")[0];
         const normalizedDate = /^\d{4}-\d{2}-\d{2}$/.test(datePart)
           ? datePart
           : expense.purchaseDate;
-
         const expenseToAdd = {
           ...expense,
           purchaseDate: normalizedDate,
         };
-
         const response = await api.post(
           "/api/credit-card-expenses/with-installments",
           expenseToAdd
         );
-
         success(
           `${expense.installments} parcela(s) adicionada(s) com sucesso!`
         );
@@ -440,7 +420,6 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
-
     async addExistingExpenseWithInstallments(expense: {
       description: string;
       originalPurchaseDate: string;
@@ -452,22 +431,18 @@ export const useFinanceStore = defineStore("finance", {
       creditCardId: string;
     }) {
       const { success, error } = useNotification();
-
       if (!expense.description?.trim()) {
         error("Descrição é obrigatória");
         throw new Error("Descrição é obrigatória");
       }
-
       if (expense.totalAmount <= 0) {
         error("Valor total deve ser maior que zero");
         throw new Error("Valor total deve ser maior que zero");
       }
-
       if (expense.totalInstallments <= 0) {
         error("Total de parcelas deve ser maior que zero");
         throw new Error("Total de parcelas deve ser maior que zero");
       }
-
       if (
         expense.currentInstallment <= 0 ||
         expense.currentInstallment > expense.totalInstallments
@@ -475,28 +450,23 @@ export const useFinanceStore = defineStore("finance", {
         error("Parcela atual deve estar entre 1 e o total de parcelas");
         throw new Error("Parcela atual inválida");
       }
-
       if (!expense.category?.trim()) {
         error("Categoria é obrigatória");
         throw new Error("Categoria é obrigatória");
       }
-
       try {
         const datePart = expense.originalPurchaseDate.split("T")[0];
         const normalizedDate = /^\d{4}-\d{2}-\d{2}$/.test(datePart)
           ? datePart
           : expense.originalPurchaseDate;
-
         const expenseToAdd = {
           ...expense,
           originalPurchaseDate: normalizedDate,
         };
-
         const response = await api.post(
           "/api/credit-card-expenses/existing-with-installments",
           expenseToAdd
         );
-
         const remainingInstallments =
           expense.totalInstallments - expense.currentInstallment + 1;
         success(
@@ -508,7 +478,6 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
-
     async updateExpense(id: string, expense: Partial<CreditCardExpense>) {
       const expenseToUpdate = {
         ...expense,
@@ -522,16 +491,13 @@ export const useFinanceStore = defineStore("finance", {
       );
       return response.data;
     },
-
     async deleteExpense(id: string) {
       await api.delete(`/api/credit-card-expenses/${id}`);
     },
-
     async toggleExpensePaid(id: string) {
       const response = await api.patch(`/api/credit-card-expenses/${id}/pay`);
       return response.data;
     },
-
     async fetchSubscriptions(monthReference?: string) {
       const dateStore = useDateReferenceStore();
       const month = monthReference || dateStore.monthYearString;
@@ -557,7 +523,6 @@ export const useFinanceStore = defineStore("finance", {
         this.loading = false;
       }
     },
-
     async addSubscription(
       subscription: Omit<Subscription, "id" | "createdAt" | "monthReference">
     ) {
@@ -580,7 +545,6 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
-
     async updateSubscription(id: string, subscription: Partial<Subscription>) {
       const { success, error } = useNotification();
       const dateStore = useDateReferenceStore();
@@ -605,7 +569,6 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
-
     async deleteSubscription(id: string) {
       const { success, error } = useNotification();
       try {
@@ -618,7 +581,6 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
-
     async fetchServices(monthReference?: string) {
       const dateStore = useDateReferenceStore();
       const month = monthReference || dateStore.monthYearString;
@@ -641,7 +603,6 @@ export const useFinanceStore = defineStore("finance", {
         this.loading = false;
       }
     },
-
     async addService(
       service: Omit<Service, "id" | "createdAt" | "monthReference">
     ) {
@@ -661,7 +622,6 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
-
     async updateService(id: string, service: Partial<Service>) {
       const { success, error } = useNotification();
       const dateStore = useDateReferenceStore();
@@ -682,7 +642,6 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
-
     async deleteService(id: string) {
       const { success, error } = useNotification();
       try {
@@ -693,6 +652,21 @@ export const useFinanceStore = defineStore("finance", {
       } catch (err: any) {
         error("Erro ao remover serviço");
         throw err;
+      }
+    },
+    async fetchFinancialReport(
+      startDate: string,
+      endDate: string
+    ): Promise<FinancialReport | null> {
+      const { error: showError } = useNotification();
+      try {
+        const response = await api.get("/api/reports/financial", {
+          params: { startDate, endDate },
+        });
+        return response.data;
+      } catch (error: any) {
+        showError(error?.message || "Erro ao buscar relatório financeiro");
+        return null;
       }
     },
   },

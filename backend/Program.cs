@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 using FinanceControl.Api.Data;
 using FinanceControl.Api.Services;
 using FinanceControl.Api.Endpoints;
-using Npgsql; 
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -77,7 +77,7 @@ CreditCardsEndpoints.Map(app);
 CreditCardExpensesEndpoints.Map(app);
 SubscriptionsEndpoints.Map(app);
 ServicesEndpoints.Map(app);
-
+ReportEndpoints.Map(app);
 
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
 var maxRetries = 10;
@@ -93,7 +93,7 @@ for (var i = 1; i <= maxRetries; i++)
             logger.LogInformation("A tentar ligar à base de dados e aplicar migrações... (Tentativa {i}/{maxRetries})", i, maxRetries);
             context.Database.Migrate();
             logger.LogInformation("Migração da base de dados bem-sucedida.");
-            break; 
+            break;
         }
     }
     catch (NpgsqlException ex)
@@ -102,12 +102,10 @@ for (var i = 1; i <= maxRetries; i++)
         if (i == maxRetries)
         {
             logger.LogError("Número máximo de tentativas atingido. Não foi possível ligar à base de dados.");
-            throw; 
+            throw;
         }
-        await Task.Delay(delay); 
+        await Task.Delay(delay);
     }
 }
-
-
 
 app.Run();

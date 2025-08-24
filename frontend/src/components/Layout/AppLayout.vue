@@ -310,6 +310,7 @@ import {
   BanknotesIcon,
   Cog6ToothIcon,
   ChartBarIcon,
+  DocumentChartBarIcon,
   ArrowRightOnRectangleIcon,
   Bars3Icon,
   XMarkIcon,
@@ -318,6 +319,7 @@ import {
   UserIcon,
   KeyIcon,
   ShieldCheckIcon,
+  UsersIcon,
 } from "@heroicons/vue/24/outline";
 
 const route = useRoute();
@@ -362,6 +364,19 @@ const menuItems = [
     path: "/services",
     icon: ChartBarIcon,
     subtitle: "Controle seus serviços de consumo",
+  },
+
+  {
+    name: "Despesas da Casa",
+    path: "/house-expenses",
+    icon: UsersIcon,
+    subtitle: "Divida despesas entre moradores",
+  },
+  {
+    name: "Relatórios",
+    path: "/reports",
+    icon: DocumentChartBarIcon,
+    subtitle: "Exporte seus dados financeiros",
   },
 ];
 
