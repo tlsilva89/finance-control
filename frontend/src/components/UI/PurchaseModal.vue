@@ -64,7 +64,7 @@
               type="text"
               required
               class="w-full bg-dark-800 border border-dark-600 text-gray-100 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
-              placeholder="Ex: Notebook Asus"
+              placeholder="Informe a descrição da compra"
             />
           </div>
 

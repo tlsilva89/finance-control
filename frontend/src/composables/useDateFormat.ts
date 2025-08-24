@@ -5,7 +5,7 @@ export function useDateFormat() {
     if (!dateString) return "";
     const datePart = dateString.split("T")[0];
     const parts = datePart.split("-");
-    const year = Number(parts);
+    const year = Number(parts[0]);
     const month = Number(parts[1]);
     const day = Number(parts[2]);
     const date = new Date(year, month - 1, day);

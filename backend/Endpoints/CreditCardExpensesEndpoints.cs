@@ -45,9 +45,8 @@ public static class CreditCardExpensesEndpoints
         try
         {
             var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var query = context.CreditCardExpenses
-                .Where(e => e.UserId == userId);
-            
+            var query = context.CreditCardExpenses.Where(e => e.UserId == userId);
+
             if (!string.IsNullOrEmpty(category))
             {
                 query = query.Where(e => e.Category == category);
@@ -80,17 +79,19 @@ public static class CreditCardExpensesEndpoints
         {
             var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var card = await context.CreditCards.FirstOrDefaultAsync(c => c.Id == cardId && c.UserId == userId);
-            
+
             if (card == null)
             {
                 return Results.NotFound(new { error = "Cartão não encontrado" });
             }
 
             var query = context.CreditCardExpenses.Where(e => e.UserId == userId && e.CreditCardId == cardId);
-            
-            if (!string.IsNullOrEmpty(monthReference) && DateTime.TryParseExact(monthReference, "yyyy-MM", null, System.Globalization.DateTimeStyles.None, out var invoiceDueDate))
+
+            if (!string.IsNullOrEmpty(monthReference) &&
+                DateTime.TryParseExact(monthReference, "yyyy-MM", null, System.Globalization.DateTimeStyles.None, out var parsedRef))
             {
-                var (startDate, endDate) = InvoiceCycleCalculator.GetInvoicePeriod(card.ClosingDay, invoiceDueDate);
+                var referenceDate = new DateTime(parsedRef.Year, parsedRef.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+                var (startDate, endDate) = InvoiceCycleCalculator.GetInvoicePeriod(card.ClosingDay, referenceDate);
                 query = query.Where(e => e.PurchaseDate >= startDate && e.PurchaseDate <= endDate);
             }
 
@@ -125,16 +126,17 @@ public static class CreditCardExpensesEndpoints
 
             var query = context.CreditCardExpenses
                 .Where(e => e.UserId == userId && e.CreditCardId == cardId && !e.IsPaid);
-            
+
             if (string.IsNullOrEmpty(monthReference))
             {
                 var allExpenses = await query.OrderBy(e => e.PurchaseDate).ToListAsync();
                 return Results.Ok(allExpenses);
             }
 
-            if (DateTime.TryParseExact(monthReference, "yyyy-MM", null, System.Globalization.DateTimeStyles.None, out var invoiceDueDate))
+            if (DateTime.TryParseExact(monthReference, "yyyy-MM", null, System.Globalization.DateTimeStyles.None, out var parsedRef))
             {
-                var (startDate, endDate) = InvoiceCycleCalculator.GetInvoicePeriod(card.ClosingDay, invoiceDueDate);
+                var referenceDate = new DateTime(parsedRef.Year, parsedRef.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+                var (startDate, endDate) = InvoiceCycleCalculator.GetInvoicePeriod(card.ClosingDay, referenceDate);
 
                 var activeInPeriod = await query
                     .Where(e => e.PurchaseDate >= startDate && e.PurchaseDate <= endDate)
@@ -209,38 +211,36 @@ public static class CreditCardExpensesEndpoints
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(request.Description) || request.Amount <= 0 || request.InstallmentAmount <= 0 || request.Installments <= 0 || string.IsNullOrWhiteSpace(request.Category))
+            if (string.IsNullOrWhiteSpace(request.Description) ||
+                request.Amount <= 0 ||
+                request.InstallmentAmount <= 0 ||
+                request.Installments <= 0 ||
+                string.IsNullOrWhiteSpace(request.Category))
                 return Results.BadRequest(new { error = "Dados inválidos" });
+
             if (!DateTime.TryParse(request.PurchaseDate, out var actualPurchaseDate))
                 return Results.BadRequest(new { error = "Data de compra inválida" });
 
             actualPurchaseDate = EnsureUtc(actualPurchaseDate);
+
             var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var creditCard = await context.CreditCards
                 .FirstOrDefaultAsync(c => c.Id == request.CreditCardId && c.UserId == userId);
-            
+
             if (creditCard == null)
                 return Results.BadRequest(new { error = "Cartão não encontrado" });
-            
-            DateTime firstInstallmentInvoiceDate;
-            if (actualPurchaseDate.Day <= creditCard.ClosingDay)
-            {
-                firstInstallmentInvoiceDate = actualPurchaseDate.AddMonths(1);
-            }
-            else
-            {
-                firstInstallmentInvoiceDate = actualPurchaseDate.AddMonths(2);
-            }
+
+            DateTime firstInstallmentInvoiceDate =
+                actualPurchaseDate.Day <= creditCard.ClosingDay
+                    ? actualPurchaseDate
+                    : actualPurchaseDate.AddMonths(1);
 
             var expenses = new List<CreditCardExpense>();
             for (int i = 1; i <= request.Installments; i++)
             {
-                var installmentDate = new DateTime(
-                    firstInstallmentInvoiceDate.AddMonths(i - 1).Year,
-                    firstInstallmentInvoiceDate.AddMonths(i - 1).Month,
-                    actualPurchaseDate.Day > creditCard.ClosingDay ? 1 : actualPurchaseDate.Day,
-                    0, 0, 0, DateTimeKind.Utc
-                );
+                var baseDate = firstInstallmentInvoiceDate.AddMonths(i - 1);
+                var day = actualPurchaseDate.Day > creditCard.ClosingDay ? 1 : actualPurchaseDate.Day;
+                var installmentDate = new DateTime(baseDate.Year, baseDate.Month, day, 0, 0, 0, DateTimeKind.Utc);
 
                 var expense = new CreditCardExpense
                 {
@@ -256,6 +256,7 @@ public static class CreditCardExpensesEndpoints
                     IsPaid = false,
                     CreatedAt = DateTime.UtcNow
                 };
+
                 expenses.Add(expense);
                 context.CreditCardExpenses.Add(expense);
             }
@@ -276,12 +277,18 @@ public static class CreditCardExpensesEndpoints
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(request.Description) || request.TotalAmount <= 0 || request.InstallmentAmount <= 0 || request.TotalInstallments <= 0 || request.CurrentInstallment <= 0)
+            if (string.IsNullOrWhiteSpace(request.Description) ||
+                request.TotalAmount <= 0 ||
+                request.InstallmentAmount <= 0 ||
+                request.TotalInstallments <= 0 ||
+                request.CurrentInstallment <= 0)
                 return Results.BadRequest(new { error = "Dados inválidos" });
+
             if (!DateTime.TryParse(request.OriginalPurchaseDate, out var originalDate))
                 return Results.BadRequest(new { error = "Data original de compra inválida" });
 
             originalDate = EnsureUtc(originalDate);
+
             var userId = int.Parse(httpContext.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var creditCard = await context.CreditCards
                 .FirstOrDefaultAsync(c => c.Id == request.CreditCardId && c.UserId == userId);
@@ -293,6 +300,7 @@ public static class CreditCardExpensesEndpoints
             for (int i = request.CurrentInstallment; i <= request.TotalInstallments; i++)
             {
                 var installmentDate = EnsureUtc(originalDate.AddMonths(i - 1));
+
                 var expense = new CreditCardExpense
                 {
                     UserId = userId,
@@ -307,6 +315,7 @@ public static class CreditCardExpensesEndpoints
                     IsPaid = false,
                     CreatedAt = DateTime.UtcNow
                 };
+
                 expenses.Add(expense);
                 context.CreditCardExpenses.Add(expense);
             }

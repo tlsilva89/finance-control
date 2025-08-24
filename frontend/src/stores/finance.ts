@@ -190,6 +190,7 @@ export const useFinanceStore = defineStore("finance", {
         this.loading = false;
       }
     },
+
     async fetchIncomes(monthReference?: string) {
       const dateStore = useDateReferenceStore();
       const month = monthReference || dateStore.monthYearString;
@@ -212,6 +213,7 @@ export const useFinanceStore = defineStore("finance", {
         this.loading = false;
       }
     },
+
     async addIncome(
       income: Omit<Income, "id" | "createdAt" | "monthReference">
     ) {
@@ -234,6 +236,7 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
+
     async updateIncome(id: string, income: Partial<Income>) {
       const { success, error } = useNotification();
       const dateStore = useDateReferenceStore();
@@ -255,6 +258,7 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
+
     async deleteIncome(id: string) {
       const { success, error } = useNotification();
       try {
@@ -267,6 +271,7 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
+
     async fetchCreditCards(monthReference?: string) {
       const dateStore = useDateReferenceStore();
       const month = monthReference || dateStore.monthYearString;
@@ -284,6 +289,7 @@ export const useFinanceStore = defineStore("finance", {
         this.loading = false;
       }
     },
+
     async addCreditCard(
       creditCard: Omit<
         CreditCard,
@@ -301,6 +307,7 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
+
     async updateCreditCard(id: string, creditCard: Partial<CreditCard>) {
       const { success, error } = useNotification();
       try {
@@ -316,6 +323,7 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
+
     async deleteCreditCard(id: string) {
       const { success, error } = useNotification();
       try {
@@ -328,6 +336,7 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
+
     async fetchExpensesByCard(
       cardId: string,
       monthReference?: string
@@ -341,19 +350,21 @@ export const useFinanceStore = defineStore("finance", {
       );
       return Array.isArray(response.data) ? response.data : [];
     },
+
     async fetchActiveExpensesByCard(
       cardId: string,
-      periodMonth?: string
+      monthReference?: string
     ): Promise<CreditCardExpense[]> {
       const params = new URLSearchParams();
-      if (periodMonth) {
-        params.append("periodMonth", periodMonth);
+      if (monthReference) {
+        params.append("monthReference", monthReference);
       }
       const response = await api.get(
         `/api/credit-card-expenses/card/${cardId}/active?${params.toString()}`
       );
       return Array.isArray(response.data) ? response.data : [];
     },
+
     async addExpense(
       expense: Omit<
         CreditCardExpense,
@@ -372,6 +383,7 @@ export const useFinanceStore = defineStore("finance", {
       );
       return response.data;
     },
+
     async addExpenseWithInstallments(expense: {
       description: string;
       amount: number;
@@ -420,6 +432,7 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
+
     async addExistingExpenseWithInstallments(expense: {
       description: string;
       originalPurchaseDate: string;
@@ -478,6 +491,7 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
+
     async updateExpense(id: string, expense: Partial<CreditCardExpense>) {
       const expenseToUpdate = {
         ...expense,
@@ -491,13 +505,16 @@ export const useFinanceStore = defineStore("finance", {
       );
       return response.data;
     },
+
     async deleteExpense(id: string) {
       await api.delete(`/api/credit-card-expenses/${id}`);
     },
+
     async toggleExpensePaid(id: string) {
       const response = await api.patch(`/api/credit-card-expenses/${id}/pay`);
       return response.data;
     },
+
     async fetchSubscriptions(monthReference?: string) {
       const dateStore = useDateReferenceStore();
       const month = monthReference || dateStore.monthYearString;
@@ -523,6 +540,7 @@ export const useFinanceStore = defineStore("finance", {
         this.loading = false;
       }
     },
+
     async addSubscription(
       subscription: Omit<Subscription, "id" | "createdAt" | "monthReference">
     ) {
@@ -545,6 +563,7 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
+
     async updateSubscription(id: string, subscription: Partial<Subscription>) {
       const { success, error } = useNotification();
       const dateStore = useDateReferenceStore();
@@ -569,6 +588,7 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
+
     async deleteSubscription(id: string) {
       const { success, error } = useNotification();
       try {
@@ -581,6 +601,7 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
+
     async fetchServices(monthReference?: string) {
       const dateStore = useDateReferenceStore();
       const month = monthReference || dateStore.monthYearString;
@@ -603,6 +624,7 @@ export const useFinanceStore = defineStore("finance", {
         this.loading = false;
       }
     },
+
     async addService(
       service: Omit<Service, "id" | "createdAt" | "monthReference">
     ) {
@@ -622,6 +644,7 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
+
     async updateService(id: string, service: Partial<Service>) {
       const { success, error } = useNotification();
       const dateStore = useDateReferenceStore();
@@ -642,6 +665,7 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
+
     async deleteService(id: string) {
       const { success, error } = useNotification();
       try {
@@ -654,6 +678,7 @@ export const useFinanceStore = defineStore("finance", {
         throw err;
       }
     },
+
     async fetchFinancialReport(
       startDate: string,
       endDate: string
