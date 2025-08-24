@@ -13,7 +13,9 @@
       <div
         class="flex items-center justify-between p-6 border-b border-dark-700"
       >
-        <h3 class="text-xl font-semibold text-gray-100">Adicionar Compra</h3>
+        <h3 class="text-xl font-semibold text-gray-100">
+          {{ isEditing ? "Editar Compra" : "Adicionar Compra" }}
+        </h3>
         <button
           @click="$emit('close')"
           class="text-gray-400 hover:text-white transition-colors"
@@ -22,7 +24,7 @@
         </button>
       </div>
 
-      <div class="flex border-b border-dark-700">
+      <div v-if="!isEditing" class="flex border-b border-dark-700">
         <button
           type="button"
           :class="[
@@ -86,7 +88,8 @@
               <select
                 v-model.number="newPurchase.installments"
                 @change="calculateNewTotalAmount"
-                class="w-full bg-dark-800 border border-dark-600 text-gray-100 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
+                :disabled="isEditing"
+                class="w-full bg-dark-800 border border-dark-600 text-gray-100 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 disabled:opacity-50"
               >
                 <option v-for="n in 24" :key="n" :value="n">{{ n }}x</option>
               </select>
@@ -101,8 +104,9 @@
                 step="0.01"
                 min="0"
                 required
+                :disabled="isEditing"
                 @input="calculateNewTotalAmount"
-                class="w-full bg-dark-800 border border-dark-600 text-gray-100 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
+                class="w-full bg-dark-800 border border-dark-600 text-gray-100 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 disabled:opacity-50"
                 placeholder="0,00"
               />
             </div>
@@ -144,7 +148,7 @@
             <div class="flex justify-between items-center text-sm">
               <span class="text-gray-400">Valor total da compra:</span>
               <span class="font-semibold text-green-400">
-                {{ formatCurrency(newPurchase.totalAmount) }}
+                {{ formatCurrency(newPurchase.amount) }}
               </span>
             </div>
           </div>
@@ -161,13 +165,13 @@
               type="submit"
               class="flex-1 px-4 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
             >
-              Adicionar Compra
+              {{ isEditing ? "Atualizar Compra" : "Adicionar Compra" }}
             </button>
           </div>
         </form>
       </div>
 
-      <div v-if="activeTab === 'existing'" class="p-6">
+      <div v-if="activeTab === 'existing' && !isEditing" class="p-6">
         <form @submit.prevent="submitExistingPurchase" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-2">
@@ -341,7 +345,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import {
   XMarkIcon,
   InformationCircleIcon,
@@ -349,13 +353,16 @@ import {
   ClockIcon,
 } from "@heroicons/vue/24/outline";
 import { useDateFormat } from "../../composables/useDateFormat";
+import type { CreditCardExpense } from "../../stores/finance";
 
 interface NewPurchaseForm {
+  id?: number;
   description: string;
   purchaseDate: string;
-  totalAmount: number;
+  amount: number;
   installmentAmount: number;
   installments: number;
+  currentInstallment: number;
   category: string;
   creditCardId: string;
 }
@@ -374,6 +381,7 @@ interface ExistingPurchaseForm {
 interface Props {
   open: boolean;
   creditCardId: string;
+  expenseToEdit?: CreditCardExpense | null;
 }
 
 const props = defineProps<Props>();
@@ -381,19 +389,21 @@ const emit = defineEmits<{
   close: [];
   submit: [
     data: NewPurchaseForm | ExistingPurchaseForm,
-    type: "new" | "existing"
+    type: "new" | "existing" | "update"
   ];
 }>();
 
 const { normalizeDate } = useDateFormat();
 const activeTab = ref<"new" | "existing">("new");
+const isEditing = computed(() => !!props.expenseToEdit);
 
 const newPurchase = ref<NewPurchaseForm>({
   description: "",
   purchaseDate: new Date().toISOString().split("T")[0],
-  totalAmount: 0,
+  amount: 0,
   installmentAmount: 0,
   installments: 1,
+  currentInstallment: 1,
   category: "",
   creditCardId: props.creditCardId,
 });
@@ -422,7 +432,7 @@ const calculateNewTotalAmount = () => {
     newPurchase.value.installmentAmount > 0 &&
     newPurchase.value.installments > 0
   ) {
-    newPurchase.value.totalAmount =
+    newPurchase.value.amount =
       Math.round(
         newPurchase.value.installmentAmount *
           newPurchase.value.installments *
@@ -458,52 +468,68 @@ const updateCurrentInstallment = () => {
 
 const submitNewPurchase = () => {
   calculateNewTotalAmount();
-
-  const formattedData = {
+  const type = isEditing.value ? "update" : "new";
+  const data = {
     ...newPurchase.value,
     purchaseDate: normalizeDate(newPurchase.value.purchaseDate),
   };
-
-  emit("submit", formattedData, "new");
+  emit("submit", data, type);
 };
 
 const submitExistingPurchase = () => {
   calculateExistingTotal();
-
-  const formattedData = {
+  const data = {
     ...existingPurchase.value,
     originalPurchaseDate: normalizeDate(
       existingPurchase.value.originalPurchaseDate
     ),
   };
-
-  emit("submit", formattedData, "existing");
+  emit("submit", data, "existing");
 };
 
 watch(
   () => props.open,
   (newVal) => {
     if (newVal) {
-      activeTab.value = "new";
-      newPurchase.value = {
-        description: "",
-        purchaseDate: new Date().toISOString().split("T")[0],
-        totalAmount: 0,
-        installmentAmount: 0,
-        installments: 1,
-        category: "",
-        creditCardId: props.creditCardId,
-      };
-      existingPurchase.value = {
-        description: "",
-        originalPurchaseDate: new Date().toISOString().split("T")[0],
-        totalAmount: 0,
-        installmentAmount: 0,
-        totalInstallments: 2,
-        currentInstallment: 1,
-        category: "",
-        creditCardId: props.creditCardId,
-      };
+      if (isEditing.value && props.expenseToEdit) {
+        activeTab.value = "new";
+        const expense = props.expenseToEdit;
+        newPurchase.value = {
+          id: Number(expense.id),
+          description: expense.description,
+          purchaseDate: new Date(expense.purchaseDate)
+            .toISOString()
+            .split("T")[0],
+          amount: expense.amount,
+          installmentAmount: expense.installmentAmount,
+          installments: expense.installments,
+          currentInstallment: expense.currentInstallment,
+          category: expense.category,
+          creditCardId: String(expense.creditCardId),
+        };
+      } else {
+        activeTab.value = "new";
+        newPurchase.value = {
+          description: "",
+          purchaseDate: new Date().toISOString().split("T")[0],
+          amount: 0,
+          installmentAmount: 0,
+          installments: 1,
+          currentInstallment: 1,
+          category: "",
+          creditCardId: props.creditCardId,
+        };
+        existingPurchase.value = {
+          description: "",
+          originalPurchaseDate: new Date().toISOString().split("T")[0],
+          totalAmount: 0,
+          installmentAmount: 0,
+          totalInstallments: 2,
+          currentInstallment: 1,
+          category: "",
+          creditCardId: props.creditCardId,
+        };
+      }
     }
   }
 );

@@ -285,6 +285,7 @@
     <PurchaseModal
       :open="purchaseModalOpen"
       :creditCardId="selectedCardId"
+      :expenseToEdit="expenseToEdit"
       @close="closePurchaseModal"
       @submit="handlePurchaseSubmit"
     />
@@ -348,6 +349,7 @@ const deleteCardModalOpen = ref(false);
 const deleteExpenseModalOpen = ref(false);
 const selectedCreditCard = ref<CreditCard | null>(null);
 const selectedCardId = ref("");
+const expenseToEdit = ref<CreditCardExpense | null>(null);
 const cardToDelete = ref<CreditCard | null>(null);
 const expenseToDelete = ref<CreditCardExpense | null>(null);
 const searchTerm = ref("");
@@ -402,12 +404,14 @@ const closeCardModal = () => {
 
 const openPurchaseModal = (cardId: string) => {
   selectedCardId.value = cardId;
+  expenseToEdit.value = null;
   purchaseModalOpen.value = true;
 };
 
 const closePurchaseModal = () => {
   purchaseModalOpen.value = false;
   selectedCardId.value = "";
+  expenseToEdit.value = null;
 };
 
 const handleCardSubmit = async (creditCardData: any) => {
@@ -427,22 +431,19 @@ const handleCardSubmit = async (creditCardData: any) => {
   }
 };
 
-const handlePurchaseSubmit = async (data: any, type: "new" | "existing") => {
+const handlePurchaseSubmit = async (
+  data: any,
+  type: "new" | "existing" | "update"
+) => {
   try {
     expensesLoading.value = true;
 
     if (type === "new") {
-      await financeStore.addExpenseWithInstallments({
-        description: data.description,
-        amount: data.totalAmount,
-        installmentAmount: data.installmentAmount,
-        purchaseDate: data.purchaseDate,
-        installments: data.installments,
-        category: data.category,
-        creditCardId: data.creditCardId,
-      });
-    } else {
+      await financeStore.addExpenseWithInstallments(data);
+    } else if (type === "existing") {
       await financeStore.addExistingExpenseWithInstallments(data);
+    } else if (type === "update") {
+      await financeStore.updateExpense(data.id, data);
     }
 
     if (!expandedCards.value.has(data.creditCardId)) {
@@ -483,7 +484,9 @@ const handleDeleteCard = async () => {
 };
 
 const editExpense = (expense: CreditCardExpense) => {
-  openPurchaseModal(expense.creditCardId);
+  selectedCardId.value = String(expense.creditCardId);
+  expenseToEdit.value = expense;
+  purchaseModalOpen.value = true;
 };
 
 const confirmDeleteExpense = (expense: CreditCardExpense) => {
@@ -498,7 +501,7 @@ const handleDeleteExpense = async () => {
       await financeStore.deleteExpense(expenseToDelete.value.id);
 
       await Promise.all([
-        loadCardExpenses(expenseToDelete.value.creditCardId),
+        loadCardExpenses(String(expenseToDelete.value.creditCardId)),
         financeStore.fetchCreditCards(),
       ]);
 
@@ -518,7 +521,7 @@ const toggleExpensePaid = async (expense: CreditCardExpense) => {
     await financeStore.toggleExpensePaid(expense.id);
 
     await Promise.all([
-      loadCardExpenses(expense.creditCardId),
+      loadCardExpenses(String(expense.creditCardId)),
       financeStore.fetchCreditCards(),
     ]);
   } catch (err) {
